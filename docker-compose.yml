@@ -8,7 +8,7 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
     ports:
-      - "5432:5432" # Per accedere dal tuo Mac con TablePlus/DBeaver
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
@@ -21,7 +21,7 @@ services:
     working_dir: /app
     command: go run .
     depends_on:
-      - db # Il backend attende che il container DB sia avviato
+      - db
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/conferenzetech?sslmode=disable
     ports:

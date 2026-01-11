@@ -5,13 +5,26 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// DBTX è l'interfaccia che definisce i metodi necessari per eseguire query (usata da sqlc)
+type DBTX interface {
+	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
+	Query(context.Context, string, ...interface{}) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...interface{}) pgx.Row
+}
 
 // DB avvolge la connessione al database e il querier
 type DB struct {
 	*pgxpool.Pool
-	Querier
+	*Queries
+}
+
+type Queries struct {
+	db DBTX
 }
 
 // New crea una nuova connessione al database con un pool configurato
@@ -36,7 +49,7 @@ func New(dsn string) (*DB, error) {
 
 	return &DB{
 		Pool:    pool,
-		Querier: NewQuerier(&PgxPool{Pool: pool}),
+		Queries: &Queries{db: pool},
 	}, nil
 }
 
@@ -47,7 +60,7 @@ func (db *DB) WithTransaction(ctx context.Context, fn func(Querier) error) error
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	q := NewQuerier(&PgxTx{Tx: tx})
+	q := &Queries{db: tx}
 
 	defer func() {
 		if p := recover(); p != nil {

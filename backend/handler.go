@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/marco-introini/conferenze.tech/backend/db"
 )
 
@@ -147,7 +147,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		Name:      req.Name,
 		Nickname:  req.Nickname,
 		City:      req.City,
-		AvatarURL: req.AvatarURL,
+		AvatarUrl: req.AvatarURL,
 		Bio:       req.Bio,
 	})
 	if err != nil {
@@ -185,7 +185,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.db.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
@@ -257,7 +257,7 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 
 	conference, err := s.db.GetConferenceByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			http.Error(w, "Conference not found", http.StatusNotFound)
 			return
 		}
@@ -289,7 +289,7 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 			User: UserResponse{
 				ID:       reg.UserID.String(),
 				Nickname: reg.Nickname,
-				City:     reg.UserCity,
+				City:     reg.City,
 			},
 			NeedsRide: reg.NeedsRide,
 			HasCar:    reg.HasCar,
@@ -379,7 +379,7 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 
 	_, err = s.db.GetConferenceByID(ctx, conferenceID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			http.Error(w, "Conference not found", http.StatusNotFound)
 			return
 		}
@@ -441,7 +441,7 @@ func (s *Server) GetUserRegistrations(w http.ResponseWriter, r *http.Request) {
 			ID:                 reg.ID.String(),
 			ConferenceID:       reg.ConferenceID.String(),
 			ConferenceTitle:    reg.Title,
-			ConferenceDate:     reg.ConfDate.Format(time.RFC3339),
+			ConferenceDate:     reg.Date.Format(time.RFC3339),
 			ConferenceLocation: reg.Location,
 			Status:             string(reg.Status),
 			Role:               string(reg.Role),
