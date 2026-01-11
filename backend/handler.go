@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/marco-introini/backend-conferenze/db"
+	"github.com/marco-introini/conferenze.tech/backend/db"
 )
 
 type Server struct {

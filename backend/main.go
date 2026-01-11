@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/marco-introini/backend-conferenze/db"
+	"github.com/marco-introini/conferenze.tech/backend/db"
 )
 
 func main() {
