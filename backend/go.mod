@@ -7,4 +7,4 @@ require (
 	github.com/lib/pq v1.10.9
 )
 
-require github.com/brianvoe/gofakeit/v7 v7.14.0 // indirect
+require github.com/brianvoe/gofakeit/v7 v7.14.0

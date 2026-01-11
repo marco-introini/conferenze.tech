@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
 
@@ -14,20 +13,19 @@ func main() {
 		dsn = "postgres://postgres:postgres@localhost:5432/conferenzetech?sslmode=disable"
 	}
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	database, err := db.New(dsn)
 	if err != nil {
 		log.Fatalf("impossibile connettersi al database: %v", err)
 	}
 	defer database.Close()
 
-	// Esempio: lista conferenze
-	conferences, err := database.ListUpcomingConferences(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Conferenze in programma:")
-	for _, c := range conferences {
-		log.Printf("- %s (%s) il %v\n", c.Title, c.Location, c.Date.Format("02/01/2006"))
+	server := NewServer(database)
+	if err := server.Run(port); err != nil {
+		log.Fatalf("server error: %v", err)
 	}
 }
