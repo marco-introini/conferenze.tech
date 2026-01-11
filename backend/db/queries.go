@@ -2,16 +2,16 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DBTX interface {
-	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
-	PrepareContext(context.Context, string) (*sql.Stmt, error)
-	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
-	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
+	Exec(ctx context.Context, sql string, arguments ...any) (int64, error)
+	Query(ctx context.Context, sql string, arguments ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, arguments ...any) pgx.Row
 }
 
 func NewQuerier(db DBTX) Querier {
@@ -22,24 +22,6 @@ type querier struct {
 	db DBTX
 }
 
-func (q *querier) DeleteAllRegistrations(ctx context.Context) error {
-	query := `DELETE FROM conference_registrations`
-	_, err := q.db.ExecContext(ctx, query)
-	return err
-}
-
-func (q *querier) DeleteAllConferences(ctx context.Context) error {
-	query := `DELETE FROM conferences`
-	_, err := q.db.ExecContext(ctx, query)
-	return err
-}
-
-func (q *querier) DeleteAllUsers(ctx context.Context) error {
-	query := `DELETE FROM users`
-	_, err := q.db.ExecContext(ctx, query)
-	return err
-}
-
 func (q *querier) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	query := `
 		INSERT INTO users (email, password, name, nickname, city, avatar_url, bio)
@@ -47,7 +29,7 @@ func (q *querier) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		RETURNING id, email, password, name, nickname, city, avatar_url, bio, created_at, updated_at
 	`
 	var user User
-	err := q.db.QueryRowContext(ctx, query,
+	err := q.db.QueryRow(ctx, query,
 		arg.Email, arg.Password, arg.Name, arg.Nickname, arg.City, arg.AvatarURL, arg.Bio,
 	).Scan(
 		&user.ID, &user.Email, &user.Password, &user.Name, &user.Nickname,
@@ -59,7 +41,7 @@ func (q *querier) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 func (q *querier) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	query := `SELECT id, email, password, name, nickname, city, avatar_url, bio, created_at, updated_at FROM users WHERE id = $1`
 	var user User
-	err := q.db.QueryRowContext(ctx, query, id).Scan(
+	err := q.db.QueryRow(ctx, query, id).Scan(
 		&user.ID, &user.Email, &user.Password, &user.Name, &user.Nickname,
 		&user.City, &user.AvatarURL, &user.Bio, &user.CreatedAt, &user.UpdatedAt,
 	)
@@ -69,7 +51,7 @@ func (q *querier) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 func (q *querier) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	query := `SELECT id, email, password, name, nickname, city, avatar_url, bio, created_at, updated_at FROM users WHERE email = $1`
 	var user User
-	err := q.db.QueryRowContext(ctx, query, email).Scan(
+	err := q.db.QueryRow(ctx, query, email).Scan(
 		&user.ID, &user.Email, &user.Password, &user.Name, &user.Nickname,
 		&user.City, &user.AvatarURL, &user.Bio, &user.CreatedAt, &user.UpdatedAt,
 	)
@@ -89,7 +71,7 @@ func (q *querier) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		RETURNING id, email, password, name, nickname, city, avatar_url, bio, created_at, updated_at
 	`
 	var user User
-	err := q.db.QueryRowContext(ctx, query,
+	err := q.db.QueryRow(ctx, query,
 		arg.ID, arg.Name, arg.Nickname, arg.City, arg.AvatarURL, arg.Bio,
 	).Scan(
 		&user.ID, &user.Email, &user.Password, &user.Name, &user.Nickname,
@@ -105,7 +87,7 @@ func (q *querier) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 		RETURNING id, email, password, name, nickname, city, avatar_url, bio, created_at, updated_at
 	`
 	var user User
-	err := q.db.QueryRowContext(ctx, query, arg.ID, arg.Password).Scan(
+	err := q.db.QueryRow(ctx, query, arg.ID, arg.Password).Scan(
 		&user.ID, &user.Email, &user.Password, &user.Name, &user.Nickname,
 		&user.City, &user.AvatarURL, &user.Bio, &user.CreatedAt, &user.UpdatedAt,
 	)
@@ -119,7 +101,7 @@ func (q *querier) CreateConference(ctx context.Context, arg CreateConferencePara
 		RETURNING id, title, date, location, website, latitude, longitude, created_at, updated_at
 	`
 	var conf Conference
-	err := q.db.QueryRowContext(ctx, query,
+	err := q.db.QueryRow(ctx, query,
 		arg.Title, arg.Date, arg.Location, arg.Website, arg.Latitude, arg.Longitude,
 	).Scan(
 		&conf.ID, &conf.Title, &conf.Date, &conf.Location, &conf.Website,
@@ -131,7 +113,7 @@ func (q *querier) CreateConference(ctx context.Context, arg CreateConferencePara
 func (q *querier) GetConferenceByID(ctx context.Context, id uuid.UUID) (Conference, error) {
 	query := `SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE id = $1`
 	var conf Conference
-	err := q.db.QueryRowContext(ctx, query, id).Scan(
+	err := q.db.QueryRow(ctx, query, id).Scan(
 		&conf.ID, &conf.Title, &conf.Date, &conf.Location, &conf.Website,
 		&conf.Latitude, &conf.Longitude, &conf.CreatedAt, &conf.UpdatedAt,
 	)
@@ -140,7 +122,7 @@ func (q *querier) GetConferenceByID(ctx context.Context, id uuid.UUID) (Conferen
 
 func (q *querier) ListConferences(ctx context.Context) ([]Conference, error) {
 	query := `SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences ORDER BY date DESC`
-	rows, err := q.db.QueryContext(ctx, query)
+	rows, err := q.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +146,7 @@ func (q *querier) ListConferences(ctx context.Context) ([]Conference, error) {
 
 func (q *querier) ListUpcomingConferences(ctx context.Context) ([]Conference, error) {
 	query := `SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE date >= NOW() ORDER BY date ASC`
-	rows, err := q.db.QueryContext(ctx, query)
+	rows, err := q.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +170,7 @@ func (q *querier) ListUpcomingConferences(ctx context.Context) ([]Conference, er
 
 func (q *querier) ListConferencesByLocation(ctx context.Context, location string) ([]Conference, error) {
 	query := `SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE location ILIKE $1 ORDER BY date DESC`
-	rows, err := q.db.QueryContext(ctx, query, "%"+location+"%")
+	rows, err := q.db.Query(ctx, query, "%"+location+"%")
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +206,7 @@ func (q *querier) UpdateConference(ctx context.Context, arg UpdateConferencePara
 		RETURNING id, title, date, location, website, latitude, longitude, created_at, updated_at
 	`
 	var conf Conference
-	err := q.db.QueryRowContext(ctx, query,
+	err := q.db.QueryRow(ctx, query,
 		arg.ID, arg.Title, arg.Date, arg.Location, arg.Website, arg.Latitude, arg.Longitude,
 	).Scan(
 		&conf.ID, &conf.Title, &conf.Date, &conf.Location, &conf.Website,
@@ -235,7 +217,7 @@ func (q *querier) UpdateConference(ctx context.Context, arg UpdateConferencePara
 
 func (q *querier) DeleteConference(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM conferences WHERE id = $1`
-	_, err := q.db.ExecContext(ctx, query, id)
+	_, err := q.db.Exec(ctx, query, id)
 	return err
 }
 
@@ -246,7 +228,7 @@ func (q *querier) RegisterUserToConference(ctx context.Context, arg RegisterUser
 		RETURNING id, user_id, conference_id, status, role, notes, needs_ride, has_car, registered_at, cancelled_at
 	`
 	var i ConferenceRegistration
-	err := q.db.QueryRowContext(ctx, query,
+	err := q.db.QueryRow(ctx, query,
 		arg.UserID, arg.ConferenceID, arg.Role, arg.Notes, arg.NeedsRide, arg.HasCar,
 	).Scan(
 		&i.ID, &i.UserID, &i.ConferenceID, &i.Status, &i.Role,
@@ -258,7 +240,7 @@ func (q *querier) RegisterUserToConference(ctx context.Context, arg RegisterUser
 func (q *querier) GetRegistration(ctx context.Context, arg GetRegistrationParams) (ConferenceRegistration, error) {
 	query := `SELECT id, user_id, conference_id, status, role, notes, needs_ride, has_car, registered_at, cancelled_at FROM conference_registrations WHERE user_id = $1 AND conference_id = $2`
 	var i ConferenceRegistration
-	err := q.db.QueryRowContext(ctx, query, arg.UserID, arg.ConferenceID).Scan(
+	err := q.db.QueryRow(ctx, query, arg.UserID, arg.ConferenceID).Scan(
 		&i.ID, &i.UserID, &i.ConferenceID, &i.Status, &i.Role,
 		&i.Notes, &i.NeedsRide, &i.HasCar, &i.RegisteredAt, &i.CancelledAt,
 	)
@@ -273,7 +255,7 @@ func (q *querier) GetRegistrationsByConference(ctx context.Context, conferenceID
 		JOIN users u ON u.id = r.user_id
 		WHERE r.conference_id = $1
 	`
-	rows, err := q.db.QueryContext(ctx, query, conferenceID)
+	rows, err := q.db.Query(ctx, query, conferenceID)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +285,7 @@ func (q *querier) GetRegistrationsByUser(ctx context.Context, userID uuid.UUID) 
 		JOIN conferences c ON c.id = r.conference_id
 		WHERE r.user_id = $1
 	`
-	rows, err := q.db.QueryContext(ctx, query, userID)
+	rows, err := q.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +314,7 @@ func (q *querier) UpdateRegistrationStatus(ctx context.Context, arg UpdateRegist
 		RETURNING id, user_id, conference_id, status, role, notes, needs_ride, has_car, registered_at, cancelled_at
 	`
 	var i ConferenceRegistration
-	err := q.db.QueryRowContext(ctx, query, arg.ID, arg.Status).Scan(
+	err := q.db.QueryRow(ctx, query, arg.ID, arg.Status).Scan(
 		&i.ID, &i.UserID, &i.ConferenceID, &i.Status, &i.Role,
 		&i.Notes, &i.NeedsRide, &i.HasCar, &i.RegisteredAt, &i.CancelledAt,
 	)
@@ -346,7 +328,7 @@ func (q *querier) CancelRegistration(ctx context.Context, arg CancelRegistration
 		RETURNING id, user_id, conference_id, status, role, notes, needs_ride, has_car, registered_at, cancelled_at
 	`
 	var i ConferenceRegistration
-	err := q.db.QueryRowContext(ctx, query, arg.ID).Scan(
+	err := q.db.QueryRow(ctx, query, arg.ID).Scan(
 		&i.ID, &i.UserID, &i.ConferenceID, &i.Status, &i.Role,
 		&i.Notes, &i.NeedsRide, &i.HasCar, &i.RegisteredAt, &i.CancelledAt,
 	)
@@ -355,7 +337,7 @@ func (q *querier) CancelRegistration(ctx context.Context, arg CancelRegistration
 
 func (q *querier) DeleteRegistration(ctx context.Context, arg DeleteRegistrationParams) error {
 	query := `DELETE FROM conference_registrations WHERE user_id = $1 AND conference_id = $2`
-	_, err := q.db.ExecContext(ctx, query, arg.UserID, arg.ConferenceID)
+	_, err := q.db.Exec(ctx, query, arg.UserID, arg.ConferenceID)
 	return err
 }
 
@@ -368,7 +350,7 @@ func (q *querier) ListUsersNeedingRide(ctx context.Context, conferenceID uuid.UU
 		JOIN conferences c ON c.id = r.conference_id
 		WHERE r.conference_id = $1 AND r.needs_ride = TRUE AND r.status != 'cancelled'
 	`
-	rows, err := q.db.QueryContext(ctx, query, conferenceID)
+	rows, err := q.db.Query(ctx, query, conferenceID)
 	if err != nil {
 		return nil, err
 	}
@@ -399,7 +381,7 @@ func (q *querier) ListUsersOfferingRide(ctx context.Context, conferenceID uuid.U
 		JOIN conferences c ON c.id = r.conference_id
 		WHERE r.conference_id = $1 AND r.has_car = TRUE AND r.status != 'cancelled'
 	`
-	rows, err := q.db.QueryContext(ctx, query, conferenceID)
+	rows, err := q.db.Query(ctx, query, conferenceID)
 	if err != nil {
 		return nil, err
 	}
@@ -435,8 +417,44 @@ func (q *querier) GetConferenceStats(ctx context.Context, id uuid.UUID) (Confere
 		GROUP BY c.id, c.title
 	`
 	var i ConferenceStats
-	err := q.db.QueryRowContext(ctx, query, id).Scan(
+	err := q.db.QueryRow(ctx, query, id).Scan(
 		&i.ID, &i.Title, &i.TotalRegistrations, &i.ConfirmedCount, &i.NeedingRideCount, &i.OfferingRideCount,
 	)
 	return i, err
+}
+
+func (q *querier) DeleteAllRegistrations(ctx context.Context) error {
+	query := `DELETE FROM conference_registrations`
+	_, err := q.db.Exec(ctx, query)
+	return err
+}
+
+func (q *querier) DeleteAllConferences(ctx context.Context) error {
+	query := `DELETE FROM conferences`
+	_, err := q.db.Exec(ctx, query)
+	return err
+}
+
+func (q *querier) DeleteAllUsers(ctx context.Context) error {
+	query := `DELETE FROM users`
+	_, err := q.db.Exec(ctx, query)
+	return err
+}
+
+type PgxPool struct {
+	*pgxpool.Pool
+}
+
+func (p *PgxPool) Exec(ctx context.Context, sql string, arguments ...any) (int64, error) {
+	tag, err := p.Pool.Exec(ctx, sql, arguments...)
+	return tag.RowsAffected(), err
+}
+
+type PgxTx struct {
+	pgx.Tx
+}
+
+func (p *PgxTx) Exec(ctx context.Context, sql string, arguments ...any) (int64, error) {
+	tag, err := p.Tx.Exec(ctx, sql, arguments...)
+	return tag.RowsAffected(), err
 }
