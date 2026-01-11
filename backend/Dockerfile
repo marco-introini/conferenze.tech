@@ -1,15 +1,15 @@
-# --- Stage di Sviluppo/Build ---
+# Stage 1: Ambiente di Build e Sviluppo
 FROM golang:1.25-alpine AS builder
 WORKDIR /app
-# Installiamo Air per l'hot-reload in dev
-RUN go install github.com/air-verse/air@latest
+# Copiamo solo i file dei moduli per sfruttare la cache di Docker
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o main .
+# Compiliamo il binario per la produzione
+RUN go build -o /main .
 
-# --- Stage di Produzione (Immagine finale leggera) ---
+# Stage 2: Immagine Finale Piuma per il Mini PC
 FROM alpine:latest AS production
 WORKDIR /root/
-COPY --from=builder /app/main .
+COPY --from=builder /main .
 CMD ["./main"]

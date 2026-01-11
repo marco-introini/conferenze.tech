@@ -5,19 +5,18 @@ services:
       target: builder
     volumes:
       - ./backend:/app
-      - pkg_cache:/go/pkg # Cache per i moduli (velocizza i build)
-    command: air -c .air.toml # Hot-reload attivo
+    working_dir: /app
+    command: go run main.go
     ports:
       - "8080:8080"
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: builder # Usa lo stage con Node installato
     volumes:
       - ./frontend:/app
-      - /app/node_modules # Protegge i moduli interni dal mount
+      - /app/node_modules
     command: npm run dev -- --host 0.0.0.0
     ports:
       - "5173:5173"
-
-volumes:
-  pkg_cache:
