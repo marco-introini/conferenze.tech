@@ -1,4 +1,16 @@
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      - POSTGRES_DB=conferenzetech
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432" # Per accedere dal tuo Mac con TablePlus/DBeaver
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
   backend:
     build:
       context: ./backend
@@ -7,6 +19,10 @@ services:
       - ./backend:/app
     working_dir: /app
     command: go run main.go
+    depends_on:
+      - db # Il backend attende che il container DB sia avviato
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/conferenzetech?sslmode=disable
     ports:
       - "8080:8080"
 
@@ -20,3 +36,6 @@ services:
     command: npm run dev -- --host 0.0.0.0
     ports:
       - "5173:5173"
+
+volumes:
+  postgres_data:
