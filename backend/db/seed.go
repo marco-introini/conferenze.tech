@@ -12,6 +12,17 @@ import (
 // Seed popola il database con dati di esempio utilizzando gofakeit
 func Seed(ctx context.Context, database *DB) error {
 	return database.WithTransaction(ctx, func(q Querier) error {
+		fmt.Println("Pulizia database...")
+		if err := q.DeleteAllRegistrations(ctx); err != nil {
+			return fmt.Errorf("errore pulizia registrazioni: %w", err)
+		}
+		if err := q.DeleteAllConferences(ctx); err != nil {
+			return fmt.Errorf("errore pulizia conferenze: %w", err)
+		}
+		if err := q.DeleteAllUsers(ctx); err != nil {
+			return fmt.Errorf("errore pulizia utenti: %w", err)
+		}
+
 		fmt.Println("Inizio seeding con i miei dati specifici...")
 
 		// 0. Miei utenti standard

@@ -1,3 +1,12 @@
+-- name: DeleteAllRegistrations :exec
+DELETE FROM conference_registrations;
+
+-- name: DeleteAllConferences :exec
+DELETE FROM conferences;
+
+-- name: DeleteAllUsers :exec
+DELETE FROM users;
+
 -- name: CreateUser :one
 INSERT INTO users (email, password, name, nickname, city, avatar_url, bio)
 VALUES ($1, $2, $3, $4, $5, $6, $7)

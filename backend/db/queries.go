@@ -22,6 +22,24 @@ type querier struct {
 	db DBTX
 }
 
+func (q *querier) DeleteAllRegistrations(ctx context.Context) error {
+	query := `DELETE FROM conference_registrations`
+	_, err := q.db.ExecContext(ctx, query)
+	return err
+}
+
+func (q *querier) DeleteAllConferences(ctx context.Context) error {
+	query := `DELETE FROM conferences`
+	_, err := q.db.ExecContext(ctx, query)
+	return err
+}
+
+func (q *querier) DeleteAllUsers(ctx context.Context) error {
+	query := `DELETE FROM users`
+	_, err := q.db.ExecContext(ctx, query)
+	return err
+}
+
 func (q *querier) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	query := `
 		INSERT INTO users (email, password, name, nickname, city, avatar_url, bio)

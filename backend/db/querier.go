@@ -8,6 +8,9 @@ import (
 )
 
 type Querier interface {
+	DeleteAllRegistrations(ctx context.Context) error
+	DeleteAllConferences(ctx context.Context) error
+	DeleteAllUsers(ctx context.Context) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
