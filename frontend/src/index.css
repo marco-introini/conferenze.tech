@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Configurazione di base per Tailwind CSS v4 */
+@theme {
+    --font-sans:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
+}
+
+/* Stili globali */
+body {
+    @apply bg-slate-50 text-slate-900;
+    font-family: theme("fontFamily.sans");
+}
+
+/* Assicurati che l'app occupi tutta l'altezza */
+#root {
+    min-height: 100vh;
+}
