@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -11,7 +10,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -83,28 +81,6 @@ type RegisterToConferenceRequest struct {
 	HasCar       bool    `json:"hasCar"`
 }
 
-func hashPassword(password string) (string, error) {
-	salt := make([]byte, 16)
-	_, err := rand.Read(salt)
-	if err != nil {
-		return "", err
-	}
-
-	hash := sha256.Sum256(append([]byte(password), salt...))
-	return hex.EncodeToString(salt) + ":" + hex.EncodeToString(hash[:]), nil
-}
-
-func checkPasswordHash(password, stored string) bool {
-	parts := strings.Split(stored, ":")
-	if len(parts) != 2 {
-		return false
-	}
-
-	salt, _ := hex.DecodeString(parts[0])
-	hash := sha256.Sum256(append([]byte(password), salt...))
-	return parts[1] == hex.EncodeToString(hash[:])
-}
-
 func generateToken() (string, error) {
 	token := make([]byte, 32)
 	_, err := rand.Read(token)
@@ -135,7 +111,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	passwordHash, err := hashPassword(req.Password)
+	passwordHash, err := db.HashPassword(req.Password)
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
@@ -194,7 +170,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !checkPasswordHash(req.Password, user.Password) {
+	if !db.CheckPasswordHash(req.Password, user.Password) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}

@@ -26,9 +26,13 @@ func Seed(ctx context.Context, database *DB) error {
 		fmt.Println("Inizio seeding con i miei dati specifici...")
 
 		// 0. Miei utenti standard
+		hashedPassword, err := HashPassword("password")
+		if err != nil {
+			return fmt.Errorf("errore hashing password: %w", err)
+		}
 		u := CreateUserParams{
 			Email:    "marco@marcointroini.it",
-			Password: "password",
+			Password: hashedPassword,
 			Name:     "marco",
 			Nickname: stringPtr("marco"),
 			City:     stringPtr("Lissone"),
@@ -47,9 +51,14 @@ func Seed(ctx context.Context, database *DB) error {
 		numUsers := 10
 		createdUsers := make([]User, 0, numUsers)
 		for i := 0; i < numUsers; i++ {
+			rawPassword := gofakeit.Password(true, true, true, true, false, 12)
+			hashedPassword, err := HashPassword(rawPassword)
+			if err != nil {
+				return fmt.Errorf("errore hashing password random: %w", err)
+			}
 			u := CreateUserParams{
 				Email:    gofakeit.Email(),
-				Password: gofakeit.Password(true, true, true, true, false, 12),
+				Password: hashedPassword,
 				Name:     gofakeit.Name(),
 				Nickname: stringPtr(gofakeit.Username()),
 				City:     stringPtr(gofakeit.City()),
