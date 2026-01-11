@@ -1,7 +1,11 @@
 export interface User {
   id: string;
-  nickname: string;
-  city: string;
+  email: string;
+  name: string;
+  nickname?: string;
+  city?: string;
+  avatarUrl?: string;
+  bio?: string;
 }
 
 export interface Conference {
@@ -9,12 +13,29 @@ export interface Conference {
   title: string;
   date: string;
   location: string;
-  website: string;
+  website?: string;
   latitude?: number;
   longitude?: number;
-  attendees: {
-    user: User;
+  attendees?: {
+    user: {
+      id: string;
+      nickname?: string;
+      city?: string;
+    };
     needsRide: boolean;
     hasCar: boolean;
   }[];
+}
+
+export interface Registration {
+  id: string;
+  conferenceId: string;
+  conferenceTitle: string;
+  conferenceDate: string;
+  conferenceLocation: string;
+  status: string;
+  role: string;
+  needsRide: boolean;
+  hasCar: boolean;
+  registeredAt: string;
 }

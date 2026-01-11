@@ -12,6 +12,24 @@ import (
 // Seed popola il database con dati di esempio utilizzando gofakeit
 func Seed(ctx context.Context, database *DB) error {
 	return database.WithTransaction(ctx, func(q Querier) error {
+		fmt.Println("Inizio seeding con i miei dati specifici...")
+
+		// 0. Miei utenti standard
+		u := CreateUserParams{
+			Email:    "marco@marcointroini.it",
+			Password: "password",
+			Name:     "marco",
+			Nickname: stringPtr("marco"),
+			City:     stringPtr("Lissone"),
+			Bio:      stringPtr("Bio di Marco"),
+		}
+
+		user, err := q.CreateUser(ctx, u)
+		if err != nil {
+			return fmt.Errorf("errore creazione utente %s: %w", u.Email, err)
+		}
+		fmt.Printf("Utente creato: %s\n", user.Email)
+
 		fmt.Println("Inizio seeding con dati casuali...")
 
 		// 1. Creazione Utenti

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import ConferenceCard from "./components/ConferenceCard";
 import ConferenceMap from "./components/ConferenceMap";
@@ -6,92 +6,35 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import type { Conference } from "./types";
-import { Map, Calendar, Users, Grid, Search } from "lucide-react";
+import { Map, Calendar, Users, Grid, Search, LogOut } from "lucide-react";
+import { AuthProvider, useAuth } from "./AuthContext";
+import { api } from "./api";
 import "./index.css";
 
-const MOCK_DATA: Conference[] = [
-  {
-    id: "1",
-    title: "GoLab 2024",
-    date: "2024-11-15",
-    location: "Firenze (FI)",
-    website: "https://golab.io",
-    latitude: 43.7696,
-    longitude: 11.2558,
-    attendees: [
-      {
-        user: { id: "u1", nickname: "GopherOne", city: "Milano" },
-        needsRide: false,
-        hasCar: true,
-      },
-      {
-        user: { id: "u2", nickname: "DevMario", city: "Bologna" },
-        needsRide: true,
-        hasCar: false,
-      },
-    ],
-  },
-  {
-    id: "2",
-    title: "React Day Italy",
-    date: "2024-10-25",
-    location: "Verona (VR)",
-    website: "https://react.org",
-    latitude: 45.4384,
-    longitude: 10.9916,
-    attendees: [
-      {
-        user: { id: "u3", nickname: "FrontendLuigi", city: "Roma" },
-        needsRide: true,
-        hasCar: false,
-      },
-    ],
-  },
-  {
-    id: "3",
-    title: "JSDay 2024",
-    date: "2024-12-10",
-    location: "Milano (MI)",
-    website: "https://jsday.it",
-    latitude: 45.4642,
-    longitude: 9.19,
-    attendees: [
-      {
-        user: { id: "u4", nickname: "NodeNino", city: "Torino" },
-        needsRide: true,
-        hasCar: false,
-      },
-      {
-        user: { id: "u5", nickname: "DevElena", city: "Genova" },
-        needsRide: false,
-        hasCar: true,
-      },
-    ],
-  },
-  {
-    id: "4",
-    title: "Rust Roma 2024",
-    date: "2024-11-20",
-    location: "Roma (RM)",
-    website: "https://rustrome.dev",
-    latitude: 41.9028,
-    longitude: 12.4964,
-    attendees: [
-      {
-        user: { id: "u6", nickname: "RustCarlo", city: "Napoli" },
-        needsRide: true,
-        hasCar: false,
-      },
-    ],
-  },
-];
-
 function Home() {
-  const [conferences] = useState<Conference[]>(MOCK_DATA);
+  const { isAuthenticated, user, logout } = useAuth();
+  const [conferences, setConferences] = useState<Conference[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "map">("map");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedConferenceId, setSelectedConferenceId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const selectedRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadConferences = async () => {
+      try {
+        const data = await api.getConferences();
+        setConferences(data);
+      } catch (err) {
+        console.error("Failed to load conferences:", err);
+        setError("Impossibile caricare le conferenze");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadConferences();
+  }, []);
 
   const filteredConferences = conferences.filter(conf => {
     const query = searchQuery.toLowerCase();
@@ -121,35 +64,67 @@ function Home() {
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-purple-200/30 to-indigo-200/30 rounded-full blur-3xl" />
         
         <div className="relative max-w-6xl mx-auto">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-slate-200/50 shadow-sm mb-6">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-sm font-medium text-slate-600">{conferences.length} eventi in programma</span>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-slate-200/50 shadow-sm mb-6">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-slate-600">
+                  {isLoading ? "Caricamento..." : `${conferences.length} eventi in programma`}
+                </span>
+              </div>
+              <h1 className="text-5xl font-bold text-slate-900 leading-tight mb-6">
+                Trova conferenze tech e
+                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"> condividi il viaggio</span>
+              </h1>
+              <p className="text-xl text-slate-600 mb-8 max-w-2xl leading-relaxed">
+                Connettiti con altri sviluppatori, riduci i costi di viaggio e trova compagnia per il tuo prossimo evento tech.
+              </p>
             </div>
-            <h1 className="text-5xl font-bold text-slate-900 leading-tight mb-6">
-              Trova conferenze tech e
-              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"> condividi il viaggio</span>
-            </h1>
-            <p className="text-xl text-slate-600 mb-8 max-w-2xl leading-relaxed">
-              Connettiti con altri sviluppatori, riduci i costi di viaggio e trova compagnia per il tuo prossimo evento tech.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => setViewMode("map")}
-                className="group px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 flex items-center gap-2"
+
+            {isAuthenticated && user && (
+              <div className="flex items-center gap-4 mt-6 lg:mt-0">
+                <div className="text-right">
+                  <p className="font-medium text-slate-900">{user.name}</p>
+                  <p className="text-sm text-slate-500">{user.email}</p>
+                </div>
+                <button
+                  onClick={logout}
+                  className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5 text-slate-600" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-4 mt-8">
+            <button
+              onClick={() => setViewMode("map")}
+              className="group px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 flex items-center gap-2"
+            >
+              <Map className="w-4 h-4" />
+              Esplora sulla mappa
+            </button>
+            {!isAuthenticated && (
+              <Link
+                to="/register"
+                className="px-6 py-3 bg-white text-slate-700 font-semibold rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-300"
               >
-                <Map className="w-4 h-4" />
-                Esplora sulla mappa
-              </button>
-              <button className="px-6 py-3 bg-white text-slate-700 font-semibold rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-300">
-                Aggiungi evento
-              </button>
-            </div>
+                Registrati
+              </Link>
+            )}
           </div>
         </div>
       </section>
 
       <main className="max-w-6xl mx-auto px-6 py-16">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+            {error}
+          </div>
+        )}
+
         <div className="mb-10">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
             <div>
@@ -202,7 +177,11 @@ function Home() {
             </div>
           </div>
 
-          {viewMode === "map" ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <span className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            </div>
+          ) : viewMode === "map" ? (
             <ConferenceMap
               conferences={conferences}
               onSelectConference={handleSelectConference}
@@ -272,13 +251,16 @@ function Home() {
             <p className="text-slate-400 text-lg mb-8">
               Migliaia di sviluppatori si sono già uniti per condividere viaggi e esperienze.
             </p>
-            <Link to="/register" className="inline-block px-8 py-3 bg-white text-slate-900 font-semibold rounded-xl hover:bg-slate-100 transition-all duration-300">
-              Registrati gratuitamente
-            </Link>
+            {!isAuthenticated ? (
+              <Link to="/register" className="inline-block px-8 py-3 bg-white text-slate-900 font-semibold rounded-xl hover:bg-slate-100 transition-all duration-300">
+                Registrati gratuitamente
+              </Link>
+            ) : (
+              <p className="text-slate-400">Benvenuto, {user?.name}!</p>
+            )}
           </div>
         </section>
       </main>
-
     </Layout>
   );
 }
@@ -286,11 +268,13 @@ function Home() {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

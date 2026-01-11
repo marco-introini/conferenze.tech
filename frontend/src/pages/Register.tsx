@@ -1,20 +1,49 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, AlertCircle } from "lucide-react";
 import Layout from "../components/Layout";
+import { useAuth } from "../AuthContext";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/");
+    setError("");
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Le password non coincidono");
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError("La password deve contenere almeno 8 caratteri");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await register({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+      });
+      navigate("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registrazione fallita");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const passwordStrength = (password: string) => {
@@ -43,6 +72,13 @@ export default function Register() {
             <h1 className="text-3xl font-bold text-slate-900 mb-3">Crea il tuo account</h1>
             <p className="text-slate-600">Unisciti alla community di sviluppatori</p>
           </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -147,10 +183,17 @@ export default function Register() {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 flex items-center justify-center gap-2"
+                disabled={isLoading}
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Crea account
-                <ArrowRight className="w-4 h-4" />
+                {isLoading ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    Crea account
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
 
