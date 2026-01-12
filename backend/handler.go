@@ -431,6 +431,34 @@ func (s *Server) GetUserRegistrations(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func (s *Server) GetMe(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	userIDStr := r.URL.Query().Get("userId")
+	if userIDStr == "" {
+		http.Error(w, "User ID required", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		log.Printf("Error getting user: %v", err)
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	user.Password = ""
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
 type ConferenceWithAttendees struct {
 	ID        string     `json:"id"`
 	Title     string     `json:"title"`
@@ -499,6 +527,7 @@ func (s *Server) Run(port string) error {
 	mux.HandleFunc("/api/conferences/create", s.CreateConference)
 	mux.HandleFunc("/api/register-to-conference", s.RegisterToConference)
 	mux.HandleFunc("/api/my-registrations", s.GetUserRegistrations)
+	mux.HandleFunc("/api/me", s.GetMe)
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

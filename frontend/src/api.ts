@@ -131,4 +131,7 @@ export const api = {
     request<Registration[]>("/api/my-registrations?userId=" + userId, {
       method: "GET",
     }),
+
+  getMe: (userId: string) =>
+    request<User>("/api/me?userId=" + userId, { method: "GET" }),
 };

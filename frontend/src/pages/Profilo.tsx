@@ -1,17 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import Layout from "../components/Layout";
 import { User, MapPin, Edit2, Save, X } from "lucide-react";
 
 export default function Profilo() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    nickname: user?.nickname || "",
-    city: user?.city || "",
-    bio: user?.bio || "",
+    name: "",
+    nickname: "",
+    city: "",
+    bio: "",
   });
+
+  console.log("Profilo - user:", user);
+  console.log("Profilo - isLoading:", isLoading);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log("Redirecting to login - no user found");
+      navigate("/login");
+    }
+  }, [isLoading, user, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      console.log("Setting form data from user:", user);
+      setFormData({
+        name: user.name || "",
+        nickname: user.nickname || "",
+        city: user.city || "",
+        bio: user.bio || "",
+      });
+    }
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto px-6 py-12 flex items-center justify-center">
+          <p className="text-slate-500">Caricamento...</p>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!user) {
     return null;

@@ -27,19 +27,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+      console.log("AuthContext - storedToken:", storedToken ? "present" : "null");
+      console.log("AuthContext - storedUser:", storedUser);
+
+      if (storedToken && storedUser) {
+        try {
+          let parsedUser = JSON.parse(storedUser);
+          console.log("AuthContext - parsed user from localStorage:", parsedUser);
+          
+          if (parsedUser.ID && !parsedUser.id) {
+            parsedUser.id = parsedUser.ID;
+            delete parsedUser.ID;
+          }
+          
+          console.log("AuthContext - normalized user:", parsedUser);
+          setToken(storedToken);
+          setUser(parsedUser);
+
+          const freshUser = await api.getMe(parsedUser.id);
+          console.log("AuthContext - fresh user from API:", freshUser);
+          setUser(freshUser);
+          localStorage.setItem("user", JSON.stringify(freshUser));
+        } catch (err) {
+          console.log("AuthContext - error fetching user, clearing localStorage", err);
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setToken(null);
+          setUser(null);
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
