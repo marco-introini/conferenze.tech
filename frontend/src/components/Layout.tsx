@@ -8,7 +8,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
@@ -31,7 +31,7 @@ export default function Layout({ children }: LayoutProps) {
                 </Link>
                 <Link to="/profilo" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  Profilo
+                  {user?.name || "Profilo"}
                 </Link>
               </>
             ) : (
