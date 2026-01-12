@@ -5,14 +5,16 @@ import ConferenceMap from "./components/ConferenceMap";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profilo from "./pages/Profilo";
+import MieConferenze from "./pages/MieConferenze";
 import type { Conference } from "./types";
-import { Map, Calendar, Users, Grid, Search, LogOut } from "lucide-react";
+import { Map, Calendar, Users, Grid, Search } from "lucide-react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { api } from "./api";
 import "./index.css";
 
 function Home() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [conferences, setConferences] = useState<Conference[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "map">("map");
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,22 +82,6 @@ function Home() {
                 Connettiti con altri sviluppatori, riduci i costi di viaggio e trova compagnia per il tuo prossimo evento tech.
               </p>
             </div>
-
-            {isAuthenticated && user && (
-              <div className="flex items-center gap-4 mt-6 lg:mt-0">
-                <div className="text-right">
-                  <p className="font-medium text-slate-900">{user.name}</p>
-                  <p className="text-sm text-slate-500">{user.email}</p>
-                </div>
-                <button
-                  onClick={logout}
-                  className="p-3 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
-                  title="Logout"
-                >
-                  <LogOut className="w-5 h-5 text-slate-600" />
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="flex flex-wrap gap-4 mt-8">
@@ -273,6 +259,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/profilo" element={<Profilo />} />
+          <Route path="/mie-conferenze" element={<MieConferenze />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
