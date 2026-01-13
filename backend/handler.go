@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -90,6 +91,21 @@ func generateToken() (string, error) {
 	return hex.EncodeToString(token), nil
 }
 
+// hashToken returns the SHA-256 hex digest of the given token.
+// We persist this hash in the database instead of the raw token.
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
+// TokenResponse is the public representation of a user token (no token hash).
+type TokenResponse struct {
+	ID         string  `json:"id"`
+	CreatedAt  string  `json:"createdAt"`
+	LastUsedAt *string `json:"lastUsedAt,omitempty"`
+	Revoked    bool    `json:"revoked"`
+}
+
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
@@ -138,6 +154,18 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// store the hash of the token
+	tokenHash := hashToken(token)
+	_, err = s.db.CreateToken(ctx, db.CreateTokenParams{
+		UserID:    user.ID,
+		TokenHash: tokenHash,
+	})
+	if err != nil {
+		log.Printf("Error saving token: %v", err)
+		http.Error(w, "Failed to save token", http.StatusInternalServerError)
+		return
+	}
+
 	user.Password = ""
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -178,6 +206,18 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	token, err := generateToken()
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	// store the hash of the token
+	tokenHash := hashToken(token)
+	_, err = s.db.CreateToken(ctx, db.CreateTokenParams{
+		UserID:    user.ID,
+		TokenHash: tokenHash,
+	})
+	if err != nil {
+		log.Printf("Error saving token: %v", err)
+		http.Error(w, "Failed to save token", http.StatusInternalServerError)
 		return
 	}
 
@@ -495,6 +535,98 @@ type RegistrationResponse struct {
 	RegisteredAt       string `json:"registeredAt"`
 }
 
+func (s *Server) GetTokens(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	userIDStr := r.URL.Query().Get("userId")
+	if userIDStr == "" {
+		http.Error(w, "User ID required", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	tokens, err := s.db.GetTokensByUser(ctx, userID)
+	if err != nil {
+		log.Printf("Error getting tokens: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	response := make([]TokenResponse, len(tokens))
+	for i, t := range tokens {
+		var lastUsed *string
+		if t.LastUsedAt != nil {
+			s := t.LastUsedAt.Format(time.RFC3339)
+			lastUsed = &s
+		}
+		response[i] = TokenResponse{
+			ID:         t.ID.String(),
+			CreatedAt:  t.CreatedAt.Format(time.RFC3339),
+			LastUsedAt: lastUsed,
+			Revoked:    t.Revoked,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) RevokeToken(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	// Accept POST or DELETE for revocation
+	if r.Method != "POST" && r.Method != "DELETE" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		http.Error(w, "Token ID required", http.StatusBadRequest)
+		return
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "Invalid token ID", http.StatusBadRequest)
+		return
+	}
+
+	token, err := s.db.RevokeToken(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			http.Error(w, "Token not found", http.StatusNotFound)
+			return
+		}
+		log.Printf("Error revoking token: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// return a safe response (no token hash)
+	var lastUsed *string
+	if token.LastUsedAt != nil {
+		s := token.LastUsedAt.Format(time.RFC3339)
+		lastUsed = &s
+	}
+	resp := TokenResponse{
+		ID:         token.ID.String(),
+		CreatedAt:  token.CreatedAt.Format(time.RFC3339),
+		LastUsedAt: lastUsed,
+		Revoked:    token.Revoked,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
@@ -528,6 +660,12 @@ func (s *Server) Run(port string) error {
 	mux.HandleFunc("/api/register-to-conference", s.RegisterToConference)
 	mux.HandleFunc("/api/my-registrations", s.GetUserRegistrations)
 	mux.HandleFunc("/api/me", s.GetMe)
+
+	// Token management endpoints
+	// GET /api/tokens?userId=<uuid>       -> list tokens for a user (metadata only)
+	// POST/DELETE /api/token/revoke?id=<token-uuid> -> revoke a token
+	mux.HandleFunc("/api/tokens", s.GetTokens)
+	mux.HandleFunc("/api/token/revoke", s.RevokeToken)
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

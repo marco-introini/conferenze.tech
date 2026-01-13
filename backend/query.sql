@@ -128,3 +128,26 @@ FROM conferences c
 LEFT JOIN conference_registrations r ON r.conference_id = c.id
 WHERE c.id = $1
 GROUP BY c.id, c.title;
+
+-- Token management queries (user_tokens table must be present in schema.sql)
+-- name: CreateToken :one
+INSERT INTO user_tokens (user_id, token_hash)
+VALUES ($1, $2)
+RETURNING id, user_id, token_hash, created_at, last_used_at, revoked;
+
+-- name: GetTokensByUser :many
+SELECT id, user_id, token_hash, created_at, last_used_at, revoked
+FROM user_tokens
+WHERE user_id = $1
+ORDER BY created_at DESC;
+
+-- name: GetTokenByHash :one
+SELECT id, user_id, token_hash, created_at, last_used_at, revoked
+FROM user_tokens
+WHERE token_hash = $1;
+
+-- name: DeleteToken :exec
+DELETE FROM user_tokens WHERE id = $1;
+
+-- name: RevokeToken :one
+UPDATE user_tokens SET revoked = true WHERE id = $1 RETURNING id, user_id, token_hash, created_at, last_used_at, revoked;

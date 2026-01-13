@@ -48,6 +48,15 @@ type User struct {
 	UpdatedAt time.Time
 }
 
+type UserToken struct {
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	TokenHash  string
+	CreatedAt  time.Time
+	LastUsedAt *time.Time
+	Revoked    bool
+}
+
 type UserRole string
 
 const (

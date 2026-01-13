@@ -47,3 +47,16 @@ CREATE INDEX idx_registrations_conference ON conference_registrations(conference
 CREATE INDEX idx_registrations_status ON conference_registrations(status);
 CREATE INDEX idx_conferences_date ON conferences(date);
 CREATE INDEX idx_users_email ON users(email);
+
+-- Table to store user tokens (we store SHA-256 hash of the token in token_hash)
+CREATE TABLE user_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_used_at TIMESTAMP WITH TIME ZONE,
+    revoked BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX idx_user_tokens_user_id ON user_tokens(user_id);
+CREATE UNIQUE INDEX idx_user_tokens_token_hash ON user_tokens(token_hash);
