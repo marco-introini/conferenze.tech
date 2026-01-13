@@ -7,7 +7,7 @@ sql:
       go:
         package: "db"
         out: "db"
-        sql_package: "pgx/v5"
+        sql_package: "database/sql"
         emit_interface: true
         overrides:
           - db_type: "uuid"
@@ -18,3 +18,9 @@ sql:
             go_type: "float64"
           - db_type: "boolean"
             go_type: "bool"
+          - db_type: "text"
+            go_type: "string"
+          - db_type: "character varying"
+            go_type: "string"
+          - db_type: "varchar"
+            go_type: "string"

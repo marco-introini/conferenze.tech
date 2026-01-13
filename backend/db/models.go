@@ -5,6 +5,7 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,11 +16,11 @@ type Conference struct {
 	Title     string
 	Date      time.Time
 	Location  string
-	Website   *string
-	Latitude  *float64
-	Longitude *float64
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Website   sql.NullString
+	Latitude  sql.NullFloat64
+	Longitude sql.NullFloat64
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
 }
 
 type ConferenceRegistration struct {
@@ -28,11 +29,11 @@ type ConferenceRegistration struct {
 	ConferenceID uuid.UUID
 	Status       string
 	Role         string
-	Notes        *string
-	NeedsRide    bool
-	HasCar       bool
-	RegisteredAt time.Time
-	CancelledAt  *time.Time
+	Notes        sql.NullString
+	NeedsRide    sql.NullBool
+	HasCar       sql.NullBool
+	RegisteredAt sql.NullTime
+	CancelledAt  sql.NullTime
 }
 
 type User struct {
@@ -40,37 +41,19 @@ type User struct {
 	Email     string
 	Password  string
 	Name      string
-	Nickname  *string
-	City      *string
-	AvatarUrl *string
-	Bio       *string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Nickname  sql.NullString
+	City      sql.NullString
+	AvatarUrl sql.NullString
+	Bio       sql.NullString
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
 }
 
 type UserToken struct {
 	ID         uuid.UUID
 	UserID     uuid.UUID
 	TokenHash  string
-	CreatedAt  time.Time
-	LastUsedAt *time.Time
+	CreatedAt  sql.NullTime
+	LastUsedAt sql.NullTime
 	Revoked    bool
 }
-
-type UserRole string
-
-const (
-	RoleAttendee  UserRole = "attendee"
-	RoleOrganizer UserRole = "organizer"
-	RoleSpeaker   UserRole = "speaker"
-	RoleVolunteer UserRole = "volunteer"
-)
-
-type RegistrationStatus string
-
-const (
-	StatusRegistered RegistrationStatus = "registered"
-	StatusWaitlist   RegistrationStatus = "waitlist"
-	StatusCancelled  RegistrationStatus = "cancelled"
-	StatusAttended   RegistrationStatus = "attended"
-)
