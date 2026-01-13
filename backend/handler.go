@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -19,11 +20,58 @@ import (
 )
 
 type Server struct {
-	db *db.DB
+	db *db.Queries
 }
 
-func NewServer(database *db.DB) *Server {
+func NewServer(database *db.Queries) *Server {
 	return &Server{db: database}
+}
+
+func nullString(s *string) sql.NullString {
+	if s == nil {
+		return sql.NullString{Valid: false}
+	}
+	return sql.NullString{String: *s, Valid: true}
+}
+
+func nullFloat64(f *float64) sql.NullFloat64 {
+	if f == nil {
+		return sql.NullFloat64{Valid: false}
+	}
+	return sql.NullFloat64{Float64: *f, Valid: true}
+}
+
+func nullBool(b bool) sql.NullBool {
+	return sql.NullBool{Bool: b, Valid: true}
+}
+
+func stringPtr(s sql.NullString) *string {
+	if !s.Valid {
+		return nil
+	}
+	return &s.String
+}
+
+func float64Ptr(f sql.NullFloat64) *float64 {
+	if !f.Valid {
+		return nil
+	}
+	return &f.Float64
+}
+
+func boolPtr(b sql.NullBool) *bool {
+	if !b.Valid {
+		return nil
+	}
+	return &b.Bool
+}
+
+func timePtr(t sql.NullTime) *string {
+	if !t.Valid {
+		return nil
+	}
+	s := t.Time.Format(time.RFC3339)
+	return &s
 }
 
 type ErrorResponse struct {
@@ -137,10 +185,10 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		Email:     req.Email,
 		Password:  passwordHash,
 		Name:      req.Name,
-		Nickname:  req.Nickname,
-		City:      req.City,
-		AvatarUrl: req.AvatarURL,
-		Bio:       req.Bio,
+		Nickname:  nullString(req.Nickname),
+		City:      nullString(req.City),
+		AvatarUrl: nullString(req.AvatarURL),
+		Bio:       nullString(req.Bio),
 	})
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
@@ -245,9 +293,9 @@ func (s *Server) ListConferences(w http.ResponseWriter, r *http.Request) {
 			Title:     c.Title,
 			Date:      dateStr,
 			Location:  c.Location,
-			Website:   c.Website,
-			Latitude:  c.Latitude,
-			Longitude: c.Longitude,
+			Website:   stringPtr(c.Website),
+			Latitude:  float64Ptr(c.Latitude),
+			Longitude: float64Ptr(c.Longitude),
 		}
 	}
 
@@ -294,9 +342,9 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 		Title:     conference.Title,
 		Date:      conference.Date.Format(time.RFC3339),
 		Location:  conference.Location,
-		Website:   conference.Website,
-		Latitude:  conference.Latitude,
-		Longitude: conference.Longitude,
+		Website:   stringPtr(conference.Website),
+		Latitude:  float64Ptr(conference.Latitude),
+		Longitude: float64Ptr(conference.Longitude),
 		Attendees: make([]Attendee, 0),
 	}
 
@@ -304,11 +352,11 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 		attendee := Attendee{
 			User: UserResponse{
 				ID:       reg.UserID.String(),
-				Nickname: reg.Nickname,
-				City:     reg.City,
+				Nickname: stringPtr(reg.Nickname),
+				City:     stringPtr(reg.City),
 			},
-			NeedsRide: reg.NeedsRide,
-			HasCar:    reg.HasCar,
+			NeedsRide: boolPtr(reg.NeedsRide),
+			HasCar:    boolPtr(reg.HasCar),
 		}
 		response.Attendees = append(response.Attendees, attendee)
 	}
@@ -342,9 +390,9 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 		Title:     req.Title,
 		Date:      date,
 		Location:  req.Location,
-		Website:   req.Website,
-		Latitude:  req.Latitude,
-		Longitude: req.Longitude,
+		Website:   nullString(req.Website),
+		Latitude:  nullFloat64(req.Latitude),
+		Longitude: nullFloat64(req.Longitude),
 	})
 	if err != nil {
 		log.Printf("Error creating conference: %v", err)
@@ -359,9 +407,9 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 		Title:     conference.Title,
 		Date:      conference.Date.Format(time.RFC3339),
 		Location:  conference.Location,
-		Website:   conference.Website,
-		Latitude:  conference.Latitude,
-		Longitude: conference.Longitude,
+		Website:   stringPtr(conference.Website),
+		Latitude:  float64Ptr(conference.Latitude),
+		Longitude: float64Ptr(conference.Longitude),
 	})
 }
 
@@ -404,18 +452,18 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role := db.UserRole(req.Role)
-	if role != db.RoleAttendee && role != db.RoleSpeaker && role != db.RoleVolunteer {
-		role = db.RoleAttendee
+	role := req.Role
+	if role != "attendee" && role != "speaker" && role != "volunteer" {
+		role = "attendee"
 	}
 
 	registration, err := s.db.RegisterUserToConference(ctx, db.RegisterUserToConferenceParams{
 		UserID:       userID,
 		ConferenceID: conferenceID,
 		Role:         role,
-		Notes:        req.Notes,
-		NeedsRide:    req.NeedsRide,
-		HasCar:       req.HasCar,
+		Notes:        nullString(req.Notes),
+		NeedsRide:    nullBool(req.NeedsRide),
+		HasCar:       nullBool(req.HasCar),
 	})
 	if err != nil {
 		log.Printf("Error registering user: %v", err)
@@ -461,9 +509,9 @@ func (s *Server) GetUserRegistrations(w http.ResponseWriter, r *http.Request) {
 			ConferenceLocation: reg.Location,
 			Status:             string(reg.Status),
 			Role:               string(reg.Role),
-			NeedsRide:          reg.NeedsRide,
-			HasCar:             reg.HasCar,
-			RegisteredAt:       reg.RegisteredAt.Format(time.RFC3339),
+			NeedsRide:          boolPtr(reg.NeedsRide),
+			HasCar:             boolPtr(reg.HasCar),
+			RegisteredAt:       *timePtr(reg.RegisteredAt),
 		}
 	}
 
@@ -512,8 +560,8 @@ type ConferenceWithAttendees struct {
 
 type Attendee struct {
 	User      UserResponse `json:"user"`
-	NeedsRide bool         `json:"needsRide"`
-	HasCar    bool         `json:"hasCar"`
+	NeedsRide *bool        `json:"needsRide"`
+	HasCar    *bool        `json:"hasCar"`
 }
 
 type UserResponse struct {
@@ -530,8 +578,8 @@ type RegistrationResponse struct {
 	ConferenceLocation string `json:"conferenceLocation"`
 	Status             string `json:"status"`
 	Role               string `json:"role"`
-	NeedsRide          bool   `json:"needsRide"`
-	HasCar             bool   `json:"hasCar"`
+	NeedsRide          *bool  `json:"needsRide"`
+	HasCar             *bool  `json:"hasCar"`
 	RegisteredAt       string `json:"registeredAt"`
 }
 
@@ -560,15 +608,10 @@ func (s *Server) GetTokens(w http.ResponseWriter, r *http.Request) {
 
 	response := make([]TokenResponse, len(tokens))
 	for i, t := range tokens {
-		var lastUsed *string
-		if t.LastUsedAt != nil {
-			s := t.LastUsedAt.Format(time.RFC3339)
-			lastUsed = &s
-		}
 		response[i] = TokenResponse{
 			ID:         t.ID.String(),
-			CreatedAt:  t.CreatedAt.Format(time.RFC3339),
-			LastUsedAt: lastUsed,
+			CreatedAt:  *timePtr(t.CreatedAt),
+			LastUsedAt: timePtr(t.LastUsedAt),
 			Revoked:    t.Revoked,
 		}
 	}
@@ -610,16 +653,10 @@ func (s *Server) RevokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// return a safe response (no token hash)
-	var lastUsed *string
-	if token.LastUsedAt != nil {
-		s := token.LastUsedAt.Format(time.RFC3339)
-		lastUsed = &s
-	}
 	resp := TokenResponse{
 		ID:         token.ID.String(),
-		CreatedAt:  token.CreatedAt.Format(time.RFC3339),
-		LastUsedAt: lastUsed,
+		CreatedAt:  *timePtr(token.CreatedAt),
+		LastUsedAt: timePtr(token.LastUsedAt),
 		Revoked:    token.Revoked,
 	}
 

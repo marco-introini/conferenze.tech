@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"math/rand"
 	"time"
@@ -9,8 +10,29 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 )
 
+func nullString(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{Valid: false}
+	}
+	return sql.NullString{String: s, Valid: true}
+}
+
+func nullFloat64(f float64) sql.NullFloat64 {
+	return sql.NullFloat64{Float64: f, Valid: true}
+}
+
+func nullBool(b bool) sql.NullBool {
+	return sql.NullBool{Bool: b, Valid: true}
+}
+
+func nullTime(t time.Time) sql.NullTime {
+	return sql.NullTime{Time: t, Valid: true}
+}
+
 // Seed popola il database con dati di esempio utilizzando gofakeit
-func Seed(ctx context.Context, database *DB) error {
+func Seed(ctx context.Context, database interface {
+	WithTransaction(context.Context, func(Querier) error) error
+}) error {
 	return database.WithTransaction(ctx, func(q Querier) error {
 		fmt.Println("Pulizia database...")
 		if err := q.DeleteAllRegistrations(ctx); err != nil {
@@ -25,7 +47,6 @@ func Seed(ctx context.Context, database *DB) error {
 
 		fmt.Println("Inizio seeding con i miei dati specifici...")
 
-		// 0. Miei utenti standard
 		hashedPassword, err := HashPassword("password")
 		if err != nil {
 			return fmt.Errorf("errore hashing password: %w", err)
@@ -34,9 +55,9 @@ func Seed(ctx context.Context, database *DB) error {
 			Email:    "marco@marcointroini.it",
 			Password: hashedPassword,
 			Name:     "marco",
-			Nickname: stringPtr("marco"),
-			City:     stringPtr("Lissone"),
-			Bio:      stringPtr("Bio di Marco"),
+			Nickname: nullString("marco"),
+			City:     nullString("Lissone"),
+			Bio:      nullString("Bio di Marco"),
 		}
 
 		user, err := q.CreateUser(ctx, u)
@@ -47,7 +68,6 @@ func Seed(ctx context.Context, database *DB) error {
 
 		fmt.Println("Inizio seeding con dati casuali...")
 
-		// 1. Creazione Utenti
 		numUsers := 10
 		createdUsers := make([]User, 0, numUsers)
 		for i := 0; i < numUsers; i++ {
@@ -60,9 +80,9 @@ func Seed(ctx context.Context, database *DB) error {
 				Email:    gofakeit.Email(),
 				Password: hashedPassword,
 				Name:     gofakeit.Name(),
-				Nickname: stringPtr(gofakeit.Username()),
-				City:     stringPtr(gofakeit.City()),
-				Bio:      stringPtr(gofakeit.Sentence(10)),
+				Nickname: nullString(gofakeit.Username()),
+				City:     nullString(gofakeit.City()),
+				Bio:      nullString(gofakeit.Sentence(10)),
 			}
 
 			user, err := q.CreateUser(ctx, u)
@@ -73,17 +93,18 @@ func Seed(ctx context.Context, database *DB) error {
 			fmt.Printf("Utente creato: %s\n", user.Email)
 		}
 
-		// 2. Creazione Conferenze
 		numConferences := 5
 		createdConfs := make([]Conference, 0, numConferences)
 		for i := 0; i < numConferences; i++ {
+			addr := gofakeit.Address()
+			website := gofakeit.URL()
 			c := CreateConferenceParams{
 				Title:     gofakeit.Company() + " Conf " + fmt.Sprint(2025+i),
 				Date:      gofakeit.DateRange(time.Now(), time.Now().AddDate(1, 0, 0)),
-				Location:  gofakeit.Address().City + ", " + gofakeit.Address().Country,
-				Website:   stringPtr(gofakeit.URL()),
-				Latitude:  float64Ptr(gofakeit.Latitude()),
-				Longitude: float64Ptr(gofakeit.Longitude()),
+				Location:  addr.City + ", " + addr.Country,
+				Website:   nullString(website),
+				Latitude:  nullFloat64(gofakeit.Latitude()),
+				Longitude: nullFloat64(gofakeit.Longitude()),
 			}
 
 			conf, err := q.CreateConference(ctx, c)
@@ -94,10 +115,11 @@ func Seed(ctx context.Context, database *DB) error {
 			fmt.Printf("Conferenza creata: %s\n", conf.Title)
 		}
 
-		// 3. Creazione Registrazioni
-		roles := []UserRole{RoleAttendee, RoleOrganizer, RoleSpeaker, RoleVolunteer}
+		roles := []string{"attendee", "organizer", "speaker", "volunteer"}
 		for _, user := range createdUsers {
-			// Registra ogni utente a 1-3 conferenze casuali
+			if len(createdConfs) == 0 {
+				break
+			}
 			numRegs := rand.Intn(3) + 1
 			perm := rand.Perm(len(createdConfs))
 			for i := 0; i < numRegs && i < len(createdConfs); i++ {
@@ -106,29 +128,20 @@ func Seed(ctx context.Context, database *DB) error {
 					UserID:       user.ID,
 					ConferenceID: conf.ID,
 					Role:         roles[rand.Intn(len(roles))],
-					NeedsRide:    gofakeit.Bool(),
-					HasCar:       gofakeit.Bool(),
-					Notes:        stringPtr(gofakeit.Phrase()),
+					Notes:        nullString(gofakeit.Phrase()),
+					NeedsRide:    nullBool(gofakeit.Bool()),
+					HasCar:       nullBool(gofakeit.Bool()),
 				}
 
 				reg, err := q.RegisterUserToConference(ctx, r)
 				if err != nil {
-					// Ignoriamo errori di duplicati (UNIQUE constraint) se capitano
 					continue
 				}
-				fmt.Printf("Registrazione creata: User %s -> Conf %s\n", reg.UserID, reg.ConferenceID)
+				fmt.Printf("Registrazione creata: User %v -> Conf %v\n", reg.UserID, reg.ConferenceID)
 			}
 		}
 
 		fmt.Println("Seeding completato con successo!")
 		return nil
 	})
-}
-
-func stringPtr(s string) *string {
-	return &s
-}
-
-func float64Ptr(f float64) *float64 {
-	return &f
 }
