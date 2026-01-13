@@ -12,12 +12,17 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/marco-introini/conferenze.tech/backend/db"
 )
+
+type contextKey string
+
+const UserIDKey contextKey = "userID"
 
 type Server struct {
 	db *db.Queries
@@ -72,6 +77,43 @@ func timePtr(t sql.NullTime) *string {
 	}
 	s := t.Time.Format(time.RFC3339)
 	return &s
+}
+
+func (s *Server) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Authorization header required", http.StatusUnauthorized)
+			return
+		}
+
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
+			return
+		}
+
+		tokenHash := hashToken(parts[1])
+
+		token, err := s.db.GetTokenByHash(r.Context(), tokenHash)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				return
+			}
+			log.Printf("Error getting token: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		if token.Revoked {
+			http.Error(w, "Token revoked", http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), UserIDKey, token.UserID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 type ErrorResponse struct {
@@ -547,6 +589,28 @@ func (s *Server) GetMe(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+func (s *Server) GetMeFromToken(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusNotFound)
+		return
+	}
+
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		log.Printf("Error getting user: %v", err)
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	user.Password = ""
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
 type ConferenceWithAttendees struct {
 	ID        string     `json:"id"`
 	Title     string     `json:"title"`
@@ -691,18 +755,20 @@ func (s *Server) Run(port string) error {
 
 	mux.HandleFunc("POST /api/register", s.Register)
 	mux.HandleFunc("POST /api/login", s.Login)
-	mux.HandleFunc("GET /api/conferences", s.ListConferences)
-	mux.HandleFunc("GET /api/conferences/{conference_id}", s.GetConference)
-	mux.HandleFunc("POST /api/conferences/create", s.CreateConference)
-	mux.HandleFunc("POST /api/conferences/{conference_id}/register", s.RegisterToConference)
-	mux.HandleFunc("GET /api/registrations/{user_id}", s.GetUserRegistrations)
-	mux.HandleFunc("GET /api/users/{user_id}", s.GetMe)
 
-	// Token management endpoints
-	// GET /api/tokens?userId=<uuid>       -> list tokens for a user (metadata only)
-	// POST/DELETE /api/token/revoke?id=<token-uuid> -> revoke a token
-	mux.HandleFunc("/api/tokens", s.GetTokens)
-	mux.HandleFunc("/api/token/revoke", s.RevokeToken)
+	protected := http.NewServeMux()
+	protected.HandleFunc("GET /api/conferences", s.ListConferences)
+	protected.HandleFunc("GET /api/conferences/{conference_id}", s.GetConference)
+	protected.HandleFunc("POST /api/conferences/create", s.CreateConference)
+	protected.HandleFunc("POST /api/conferences/{conference_id}/register", s.RegisterToConference)
+	protected.HandleFunc("GET /api/registrations/{user_id}", s.GetUserRegistrations)
+	protected.HandleFunc("GET /api/users/{user_id}", s.GetMe)
+	protected.HandleFunc("GET /api/me", s.GetMeFromToken)
+
+	protected.HandleFunc("/api/tokens", s.GetTokens)
+	protected.HandleFunc("/api/token/revoke", s.RevokeToken)
+
+	mux.Handle("/api/", s.authMiddleware(protected))
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
