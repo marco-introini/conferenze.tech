@@ -689,14 +689,14 @@ func corsMiddleware(next http.Handler) http.Handler {
 func (s *Server) Run(port string) error {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/register", s.Register)
-	mux.HandleFunc("/api/login", s.Login)
-	mux.HandleFunc("/api/conferences", s.ListConferences)
-	mux.HandleFunc("/api/conference", s.GetConference)
-	mux.HandleFunc("/api/conferences/create", s.CreateConference)
-	mux.HandleFunc("/api/register-to-conference", s.RegisterToConference)
-	mux.HandleFunc("/api/my-registrations", s.GetUserRegistrations)
-	mux.HandleFunc("/api/me", s.GetMe)
+	mux.HandleFunc("POST /api/register", s.Register)
+	mux.HandleFunc("POST /api/login", s.Login)
+	mux.HandleFunc("GET /api/conferences", s.ListConferences)
+	mux.HandleFunc("GET /api/conferences/{conference_id}", s.GetConference)
+	mux.HandleFunc("POST /api/conferences/create", s.CreateConference)
+	mux.HandleFunc("POST /api/conferences/{conference_id}/register", s.RegisterToConference)
+	mux.HandleFunc("GET /api/registrations/{user_id}", s.GetUserRegistrations)
+	mux.HandleFunc("GET /api/users/{user_id}", s.GetMe)
 
 	// Token management endpoints
 	// GET /api/tokens?userId=<uuid>       -> list tokens for a user (metadata only)
