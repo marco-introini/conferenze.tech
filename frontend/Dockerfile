@@ -8,7 +8,6 @@ RUN npm run build
 
 # Stage 2: Final (Produzione con Nginx)
 FROM nginx:alpine
-# Copiamo solo i file statici generati (solitamente nella cartella /dist o /build)
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
