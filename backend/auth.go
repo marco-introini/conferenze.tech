@@ -15,7 +15,7 @@ import (
 
 // generateToken creates a new random token
 func generateToken() (string, error) {
-	token := make([]byte, 32)
+	token := make([]byte, TokenSize)
 	_, err := rand.Read(token)
 	if err != nil {
 		return "", err

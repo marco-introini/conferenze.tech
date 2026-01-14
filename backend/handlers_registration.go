@@ -15,7 +15,7 @@ import (
 
 // RegisterToConference handles user registration to a conference
 func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	var req RegisterToConferenceRequest
@@ -54,8 +54,8 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 	}
 
 	role := req.Role
-	if role != "attendee" && role != "speaker" && role != "volunteer" {
-		role = "attendee"
+	if !IsValidRole(role) {
+		role = RoleAttendee
 	}
 
 	registration, err := s.db.RegisterUserToConference(ctx, db.RegisterUserToConferenceParams{
@@ -81,7 +81,7 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 
 // GetUserRegistrations retrieves all registrations for a specific user
 func (s *Server) GetUserRegistrations(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	userIDStr := r.URL.Query().Get("userId")

@@ -15,7 +15,7 @@ import (
 
 // ListConferences retrieves all conferences
 func (s *Server) ListConferences(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	conferences, err := s.db.ListConferences(ctx)
@@ -47,7 +47,7 @@ func (s *Server) ListConferences(w http.ResponseWriter, r *http.Request) {
 
 // GetConference retrieves a specific conference with its attendees
 func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	idStr := r.URL.Query().Get("id")
@@ -112,7 +112,7 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 
 // CreateConference creates a new conference
 func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	var req CreateConferenceRequest

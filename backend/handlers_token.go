@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -14,7 +13,7 @@ import (
 
 // GetTokens retrieves all tokens for a specific user
 func (s *Server) GetTokens(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	userIDStr := r.URL.Query().Get("userId")
@@ -54,7 +53,7 @@ func (s *Server) GetTokens(w http.ResponseWriter, r *http.Request) {
 
 // RevokeToken revokes a specific token
 func (s *Server) RevokeToken(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	// Accept POST or DELETE for revocation

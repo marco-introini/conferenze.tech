@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -15,7 +14,7 @@ import (
 
 // Register handles user registration
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	var req RegisterRequest
@@ -84,7 +83,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 // Login handles user authentication
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	var req LoginRequest
@@ -141,7 +140,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 
 // GetMe retrieves user information by user ID from query parameter
 func (s *Server) GetMe(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	userIDStr := r.URL.Query().Get("userId")
@@ -172,7 +171,7 @@ func (s *Server) GetMe(w http.ResponseWriter, r *http.Request) {
 
 // GetMeFromToken retrieves user information from the authentication token
 func (s *Server) GetMeFromToken(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
 	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)

@@ -12,12 +12,12 @@ import (
 func main() {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		dsn = "postgres://postgres:postgres@localhost:5432/conferenzetech?sslmode=disable"
+		dsn = DefaultDSN
 	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = DefaultPort
 	}
 
 	sqlDB, err := sql.Open("postgres", dsn)
