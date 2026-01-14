@@ -66,7 +66,7 @@ func Seed(ctx context.Context, database interface {
 
 		numUsers := 10
 		createdUsers := make([]User, 0, numUsers)
-		for i := 0; i < numUsers; i++ {
+		for range numUsers {
 			rawPassword := gofakeit.Password(true, true, true, true, false, 12)
 			hashedPassword, err := HashPassword(rawPassword)
 			if err != nil {
@@ -91,7 +91,7 @@ func Seed(ctx context.Context, database interface {
 
 		numConferences := 5
 		createdConfs := make([]Conference, 0, numConferences)
-		for i := 0; i < numConferences; i++ {
+		for i := range numConferences {
 			addr := gofakeit.Address()
 			website := gofakeit.URL()
 			c := CreateConferenceParams{
@@ -101,6 +101,7 @@ func Seed(ctx context.Context, database interface {
 				Website:   nullString(website),
 				Latitude:  nullFloat64(gofakeit.Latitude()),
 				Longitude: nullFloat64(gofakeit.Longitude()),
+				CreatedBy: user.ID,
 			}
 
 			conf, err := q.CreateConference(ctx, c)
