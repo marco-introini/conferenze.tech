@@ -3,7 +3,23 @@ package main
 import (
 	"database/sql"
 	"time"
+
+	"github.com/marco-introini/conferenze.tech/backend/db"
 )
+
+// toUserResponse converts a database user to the API response format
+func toUserResponse(u db.User) UserResponse {
+	return UserResponse{
+		ID:        u.ID.String(),
+		Email:     u.Email,
+		Name:      u.Name,
+		Nickname:  stringPtr(u.Nickname),
+		City:      stringPtr(u.City),
+		AvatarURL: stringPtr(u.AvatarUrl),
+		Bio:       stringPtr(u.Bio),
+		CreatedAt: u.CreatedAt.Time.Format(time.RFC3339),
+	}
+}
 
 // nullString converts a string pointer to sql.NullString
 func nullString(s *string) sql.NullString {

@@ -11,10 +11,18 @@ make test-verbose      # Con race detector
 make test-coverage     # HTML coverage report
 ```
 
-### 2. File .http (VS Code REST Client)
+### 2. File .http (VS Code / JetBrains)
+**VS Code (REST Client):**
 ```bash
-# Apri backend/api-tests.http in VS Code
-# Clicca "Send Request" su ogni chiamata
+# Apri backend/api-tests.http
+# Clicca "Send Request"
+```
+
+**JetBrains IDEs (IntelliJ, GoLand):**
+```bash
+# Apri backend/jetbrains-tests.http
+# Seleziona l'ambiente "dev" in alto
+# Esegui le richieste con il tasto Play
 ```
 
 ### 3. Script curl
@@ -88,25 +96,6 @@ go mod init conferenze.tech/backend
 go get github.com/lib/pq
 go get github.com/google/uuid
 go get golang.org/x/crypto/bcrypt
-```
-
-3. Copia i file dalla directory `frontend-conferenze/backend/db/` nella directory `backend/db/`
-
-4. Configura le variabili d'ambiente o crea un file `.env`:
-
-```bash
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_USER=postgres
-export DB_PASSWORD=your_password
-export DB_NAME=conferenze
-export DB_SSLMODE=disable
-```
-
-5. Esegui le migration:
-
-```bash
-psql -h localhost -U postgres -d conferenze -f schema.sql
 ```
 
 ## Utilizzo

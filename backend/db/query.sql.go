@@ -38,9 +38,9 @@ func (q *Queries) CancelRegistration(ctx context.Context, id uuid.UUID) (Confere
 }
 
 const createConference = `-- name: CreateConference :one
-INSERT INTO conferences (title, date, location, website, latitude, longitude)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, title, date, location, website, latitude, longitude, created_at, updated_at
+INSERT INTO conferences (title, date, location, website, latitude, longitude, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at
 `
 
 type CreateConferenceParams struct {
@@ -50,6 +50,7 @@ type CreateConferenceParams struct {
 	Website   sql.NullString
 	Latitude  sql.NullFloat64
 	Longitude sql.NullFloat64
+	CreatedBy uuid.NullUUID
 }
 
 func (q *Queries) CreateConference(ctx context.Context, arg CreateConferenceParams) (Conference, error) {
@@ -60,6 +61,7 @@ func (q *Queries) CreateConference(ctx context.Context, arg CreateConferencePara
 		arg.Website,
 		arg.Latitude,
 		arg.Longitude,
+		arg.CreatedBy,
 	)
 	var i Conference
 	err := row.Scan(
@@ -70,6 +72,7 @@ func (q *Queries) CreateConference(ctx context.Context, arg CreateConferencePara
 		&i.Website,
 		&i.Latitude,
 		&i.Longitude,
+		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -204,7 +207,7 @@ func (q *Queries) DeleteToken(ctx context.Context, id uuid.UUID) error {
 }
 
 const getConferenceByID = `-- name: GetConferenceByID :one
-SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE id = $1
+SELECT id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at FROM conferences WHERE id = $1
 `
 
 func (q *Queries) GetConferenceByID(ctx context.Context, id uuid.UUID) (Conference, error) {
@@ -218,6 +221,7 @@ func (q *Queries) GetConferenceByID(ctx context.Context, id uuid.UUID) (Conferen
 		&i.Website,
 		&i.Latitude,
 		&i.Longitude,
+		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -517,7 +521,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const listConferences = `-- name: ListConferences :many
-SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences ORDER BY date DESC
+SELECT id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at FROM conferences ORDER BY date DESC
 `
 
 func (q *Queries) ListConferences(ctx context.Context) ([]Conference, error) {
@@ -537,6 +541,7 @@ func (q *Queries) ListConferences(ctx context.Context) ([]Conference, error) {
 			&i.Website,
 			&i.Latitude,
 			&i.Longitude,
+			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -554,7 +559,7 @@ func (q *Queries) ListConferences(ctx context.Context) ([]Conference, error) {
 }
 
 const listConferencesByLocation = `-- name: ListConferencesByLocation :many
-SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE location ILIKE $1 ORDER BY date DESC
+SELECT id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at FROM conferences WHERE location ILIKE $1 ORDER BY date DESC
 `
 
 func (q *Queries) ListConferencesByLocation(ctx context.Context, location string) ([]Conference, error) {
@@ -574,6 +579,7 @@ func (q *Queries) ListConferencesByLocation(ctx context.Context, location string
 			&i.Website,
 			&i.Latitude,
 			&i.Longitude,
+			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -591,7 +597,7 @@ func (q *Queries) ListConferencesByLocation(ctx context.Context, location string
 }
 
 const listUpcomingConferences = `-- name: ListUpcomingConferences :many
-SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE date >= NOW() ORDER BY date ASC
+SELECT id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at FROM conferences WHERE date >= NOW() ORDER BY date ASC
 `
 
 func (q *Queries) ListUpcomingConferences(ctx context.Context) ([]Conference, error) {
@@ -611,6 +617,7 @@ func (q *Queries) ListUpcomingConferences(ctx context.Context) ([]Conference, er
 			&i.Website,
 			&i.Latitude,
 			&i.Longitude,
+			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -819,7 +826,7 @@ UPDATE conferences SET
     longitude = COALESCE($7, longitude),
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, title, date, location, website, latitude, longitude, created_at, updated_at
+RETURNING id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at
 `
 
 type UpdateConferenceParams struct {
@@ -851,6 +858,7 @@ func (q *Queries) UpdateConference(ctx context.Context, arg UpdateConferencePara
 		&i.Website,
 		&i.Latitude,
 		&i.Longitude,
+		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

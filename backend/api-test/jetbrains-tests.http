@@ -1,0 +1,243 @@
+### Conferenze.tech API Tests (JetBrains Format)
+### Seleziona l'ambiente "dev" dal menu a tendina "Run with" in alto
+
+################################################################################
+# AUTH - Authentication & Registration
+################################################################################
+
+### 1. Register new user
+POST {{baseUrl}}/api/register
+Content-Type: application/json
+
+{
+  "name": "JetBrains User",
+  "email": "{{test_email}}",
+  "password": "password123"
+}
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 201 || response.status === 409, "Response status is not 201 or 409");
+    });
+%}
+
+### 2. Login (Token salvato automaticamente)
+POST {{baseUrl}}/api/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.test("Login successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.token, "Token not found in response");
+    });
+
+    // Salva il token nelle variabili globali per usarlo nelle prossime chiamate
+    client.global.set("auth_token", response.body.token);
+    client.log("Token saved: " + response.body.token.substring(0, 20) + "...");
+%}
+
+### 3. Get current user info (richiede auth)
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Auth works", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+################################################################################
+# CONFERENCES - Gestione Conferenze
+################################################################################
+
+### 4. Lista tutte le conferenze (pubblico)
+GET {{baseUrl}}/api/conferences
+Accept: application/json
+
+### 5. Cerca conferenze per nome
+GET {{baseUrl}}/api/conferences?search=golang
+Accept: application/json
+
+### 6. Filtra per location
+GET {{baseUrl}}/api/conferences?location=Milano
+
+### 7. Crea nuova conferenza (richiede auth)
+POST {{baseUrl}}/api/conferences
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "title": "JetBrains Conf 2026",
+  "date": "2026-09-15T10:00:00Z",
+  "location": "Milano",
+  "website": "https://jetbrains.com",
+  "latitude": 45.4642,
+  "longitude": 9.1900
+}
+
+> {%
+    client.test("Conference created", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+    });
+
+    // Salva ID conferenza per test successivi
+    client.global.set("conf_id", response.body.id);
+    client.log("Conference ID saved: " + response.body.id);
+%}
+
+### 8. Dettaglio conferenza
+GET {{baseUrl}}/api/conferences/{{conf_id}}
+
+> {%
+    client.test("Get conference details", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.id === client.global.get("conf_id"), "ID mismatch");
+    });
+%}
+
+### 9. Le mie conferenze (create da me)
+GET {{baseUrl}}/api/my-conferences
+Authorization: Bearer {{auth_token}}
+
+### 10. Elimina conferenza (richiede auth + ownership)
+DELETE {{baseUrl}}/api/conferences/{{conf_id}}
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Conference deleted", function() {
+        client.assert(response.status === 204 || response.status === 200, "Response status is not 204 or 200");
+    });
+%}
+
+################################################################################
+# REGISTRATIONS - Iscrizioni alle Conferenze
+################################################################################
+
+### Pre-requisito: Crea un'altra conferenza per testare le iscrizioni
+POST {{baseUrl}}/api/conferences
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "title": "Registration Test Conf",
+  "date": "2026-11-20T09:00:00Z",
+  "location": "Roma"
+}
+
+> {%
+    client.global.set("reg_conf_id", response.body.id);
+%}
+
+### 11. Registrati a una conferenza
+POST {{baseUrl}}/api/conferences/{{reg_conf_id}}/register
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "role": "attendee",
+  "notes": "Sono interessato ai workshop su performance",
+  "hasCar": true
+}
+
+> {%
+    client.test("Registered successfully", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+    });
+%}
+
+### 12. Lista partecipanti (se sei organizzatore)
+GET {{baseUrl}}/api/conferences/{{reg_conf_id}}/registrations
+Authorization: Bearer {{auth_token}}
+
+### 13. Le mie iscrizioni
+# Prima dobbiamo prendere l'ID utente
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.global.set("user_id", response.body.ID);
+%}
+
+### Ora prendiamo le iscrizioni
+GET {{baseUrl}}/api/registrations/{{user_id}}
+Authorization: Bearer {{auth_token}}
+
+### 14. Cancella iscrizione
+DELETE {{baseUrl}}/api/conferences/{{reg_conf_id}}/register
+Authorization: Bearer {{auth_token}}
+
+################################################################################
+# ADMIN & INFO
+################################################################################
+
+### 15. Lista tutti gli utenti (admin only)
+GET {{baseUrl}}/api/admin/users
+Authorization: Bearer {{auth_token}}
+
+### 16. Health check
+GET {{baseUrl}}/health
+
+> {%
+    client.test("Health check passed", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body === "OK", "Response body is not OK");
+    });
+%}
+
+################################################################################
+# ERROR CASES - Test casi d'errore
+################################################################################
+
+### 17. Conferenza non esistente (404)
+GET {{baseUrl}}/api/conferences/00000000-0000-0000-0000-000000000000
+
+> {%
+    client.test("Returns 404", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+    });
+%}
+
+### 18. Richiesta senza auth (401)
+POST {{baseUrl}}/api/conferences
+Content-Type: application/json
+
+{
+  "title": "Unauthorized Conf"
+}
+
+> {%
+    client.test("Returns 401", function() {
+        client.assert(response.status === 401, "Response status is not 401");
+    });
+%}
+
+### 19. Token invalido (401)
+GET {{baseUrl}}/api/me
+Authorization: Bearer invalid-token-12345
+
+> {%
+    client.test("Returns 401", function() {
+        client.assert(response.status === 401, "Response status is not 401");
+    });
+%}
+
+### 20. Dati invalidi (400)
+POST {{baseUrl}}/api/conferences
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "title": "",
+  "date": "invalid-date"
+}
+
+> {%
+    client.test("Returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+    });
+%}

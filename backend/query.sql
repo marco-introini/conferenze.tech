@@ -35,21 +35,21 @@ WHERE id = $1
 RETURNING id, email, password, name, nickname, city, avatar_url, bio, created_at, updated_at;
 
 -- name: CreateConference :one
-INSERT INTO conferences (title, date, location, website, latitude, longitude)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, title, date, location, website, latitude, longitude, created_at, updated_at;
+INSERT INTO conferences (title, date, location, website, latitude, longitude, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at;
 
 -- name: GetConferenceByID :one
-SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE id = $1;
+SELECT id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at FROM conferences WHERE id = $1;
 
 -- name: ListConferences :many
-SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences ORDER BY date DESC;
+SELECT id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at FROM conferences ORDER BY date DESC;
 
 -- name: ListUpcomingConferences :many
-SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE date >= NOW() ORDER BY date ASC;
+SELECT id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at FROM conferences WHERE date >= NOW() ORDER BY date ASC;
 
 -- name: ListConferencesByLocation :many
-SELECT id, title, date, location, website, latitude, longitude, created_at, updated_at FROM conferences WHERE location ILIKE $1 ORDER BY date DESC;
+SELECT id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at FROM conferences WHERE location ILIKE $1 ORDER BY date DESC;
 
 -- name: UpdateConference :one
 UPDATE conferences SET
@@ -61,7 +61,7 @@ UPDATE conferences SET
     longitude = COALESCE($7, longitude),
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, title, date, location, website, latitude, longitude, created_at, updated_at;
+RETURNING id, title, date, location, website, latitude, longitude, created_by, created_at, updated_at;
 
 -- name: DeleteConference :exec
 DELETE FROM conferences WHERE id = $1;

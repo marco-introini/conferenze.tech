@@ -1,7 +1,5 @@
 package main
 
-import "github.com/marco-introini/conferenze.tech/backend/db"
-
 // contextKey is a custom type for context keys to avoid collisions with other packages
 type contextKey string
 
@@ -58,15 +56,15 @@ type ErrorResponse struct {
 // LoginResponse is returned after successful user authentication.
 // It contains the user's details (with password removed) and an authentication token.
 type LoginResponse struct {
-	User  db.User `json:"user"`  // User details (password field is cleared)
-	Token string  `json:"token"` // Authentication bearer token for subsequent requests
+	User  UserResponse `json:"user"`  // User details
+	Token string       `json:"token"` // Authentication bearer token for subsequent requests
 }
 
 // RegisterResponse is returned after successful user registration.
 // It contains the newly created user's details and an authentication token.
 type RegisterResponse struct {
-	User  db.User `json:"user"`  // Newly created user details (password field is cleared)
-	Token string  `json:"token"` // Authentication bearer token for subsequent requests
+	User  UserResponse `json:"user"`  // Newly created user details
+	Token string       `json:"token"` // Authentication bearer token for subsequent requests
 }
 
 // ConferenceResponse represents a conference in API responses.
@@ -105,9 +103,14 @@ type Attendee struct {
 // UserResponse represents public user information in API responses.
 // Only non-sensitive user data is included for privacy.
 type UserResponse struct {
-	ID       string  `json:"id"`                 // User UUID
-	Nickname *string `json:"nickname,omitempty"` // Optional display nickname
-	City     *string `json:"city,omitempty"`     // Optional city location
+	ID        string  `json:"id"`                  // User UUID
+	Email     string  `json:"email"`               // User email
+	Name      string  `json:"name"`                // User full name
+	Nickname  *string `json:"nickname,omitempty"`  // Optional display nickname
+	City      *string `json:"city,omitempty"`      // Optional city location
+	AvatarURL *string `json:"avatarUrl,omitempty"` // Optional avatar URL
+	Bio       *string `json:"bio,omitempty"`       // Optional biography
+	CreatedAt string  `json:"createdAt"`           // Creation timestamp
 }
 
 // RegistrationResponse represents a conference registration in API responses.

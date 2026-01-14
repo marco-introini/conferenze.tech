@@ -36,7 +36,8 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conferenceID, err := uuid.Parse(req.ConferenceID)
+	idStr := r.PathValue("conference_id")
+	conferenceID, err := uuid.Parse(idStr)
 	if err != nil {
 		http.Error(w, "Invalid conference ID", http.StatusBadRequest)
 		return

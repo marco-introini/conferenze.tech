@@ -44,12 +44,12 @@ POST /api/login
 ```json
 {
   "user": {
-    "ID": "uuid",
-    "Email": "user@example.com",
-    "Name": "John Doe",
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
     ...
   },
-  "token": "your-token"
+  "token": "your-jwt-token"
 }
 ```
 
@@ -231,12 +231,14 @@ GET /api/me
 **Response 200:**
 ```json
 {
-  "ID": "uuid",
-  "Email": "user@example.com",
-  "Name": "John Doe",
-  "Nickname": { "String": "johnd", "Valid": true },
-  "City": { "String": "Milano", "Valid": true },
-  ...
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "nickname": "johnd",
+  "city": "Milano",
+  "avatarUrl": "https://...",
+  "bio": "Developer",
+  "createdAt": "2026-01-14T10:00:00Z"
 }
 ```
 
@@ -374,9 +376,9 @@ GET /api/users/{user_id}
 **Response 200:**
 ```json
 {
-  "ID": "uuid",
-  "Email": "user@example.com",
-  "Name": "John Doe",
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "John Doe",
   ...
 }
 ```
@@ -444,16 +446,14 @@ POST /api/token/revoke
 
 ```json
 {
-  "ID": "uuid",
-  "Email": "string",
-  "Password": "string (hashed)",
-  "Name": "string",
-  "Nickname": { "String": "string", "Valid": boolean },
-  "City": { "String": "string", "Valid": boolean },
-  "AvatarUrl": { "String": "string", "Valid": boolean },
-  "Bio": { "String": "string", "Valid": boolean },
-  "CreatedAt": { "Time": "timestamp", "Valid": boolean },
-  "UpdatedAt": { "Time": "timestamp", "Valid": boolean }
+  "id": "uuid",
+  "email": "string",
+  "name": "string",
+  "nickname": "string (optional)",
+  "city": "string (optional)",
+  "avatarUrl": "string (optional)",
+  "bio": "string (optional)",
+  "createdAt": "timestamp (RFC3339)"
 }
 ```
 
@@ -601,7 +601,7 @@ Il server ha CORS abilitato con:
 
 1. **Date Format:** Tutte le date sono in formato RFC3339 (`2026-09-15T10:00:00Z`)
 2. **UUIDs:** Tutti gli ID sono UUID v4
-3. **Null Fields:** I campi SQL nullable sono rappresentati come `{ "String": "value", "Valid": true }`
+3. **Null Fields:** I campi opzionali sono stringhe semplici o `null`
 4. **Password:** Le password sono hashate con bcrypt server-side
 5. **Tokens:** I token sono hash SHA-256 salvati nel database
 

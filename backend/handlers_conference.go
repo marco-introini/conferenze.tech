@@ -50,7 +50,7 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
-	idStr := r.URL.Query().Get("id")
+	idStr := r.PathValue("conference_id")
 	if idStr == "" {
 		http.Error(w, "Conference ID required", http.StatusBadRequest)
 		return
@@ -94,9 +94,12 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 	for _, reg := range registrations {
 		attendee := Attendee{
 			User: UserResponse{
-				ID:       reg.UserID.String(),
-				Nickname: stringPtr(reg.Nickname),
-				City:     stringPtr(reg.City),
+				ID:        reg.UserID.String(),
+				Email:     reg.Email,
+				Name:      reg.Name,
+				Nickname:  stringPtr(reg.Nickname),
+				City:      stringPtr(reg.City),
+				AvatarURL: stringPtr(reg.AvatarUrl),
 			},
 			NeedsRide: boolPtr(reg.NeedsRide),
 			HasCar:    boolPtr(reg.HasCar),
