@@ -1,0 +1,41 @@
+# Binari compilati
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+tmp/
+
+# File di test
+*.test
+*.out
+
+# Dipendenze Go
+/vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Air
+.air.toml.bak
+build-errors.log
+
+# Git
+.git/
+.gitignore

@@ -12,31 +12,49 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d conferenzetech"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
       target: builder
+      cache_from:
+        - golang:1.25-alpine
     volumes:
       - ./backend:/app
+      - go-modules:/go/pkg/mod
     working_dir: /app
-    command: go run .
+    command: air -c .air.toml
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/conferenzetech?sslmode=disable
+      - CGO_ENABLED=0
     ports:
       - "8080:8080"
 
   frontend:
     build:
       context: ./frontend
-      target: builder # Usa lo stage con Node installato
+      target: builder
+      cache_from:
+        - node:22-alpine
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - node_modules:/app/node_modules
+    working_dir: /app
     command: npm run dev -- --host 0.0.0.0
     ports:
       - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8080
 
 volumes:
   postgres_data:
+  go-modules:
+  node_modules:
