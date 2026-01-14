@@ -49,6 +49,7 @@ seed:
 
 # Migrate database
 migrate:
+	docker compose exec -T db psql -U user -d conferenzetech -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 	docker compose exec -T db psql -U user -d conferenzetech < backend/schema.sql
 
 # Build produzione
