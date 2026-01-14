@@ -1,3 +1,6 @@
+backend/tmp/*
+backend/backend
+
 # Logs
 frontend/logs
 frontend/*.log

@@ -1,4 +1,4 @@
-.PHONY: dev dev-fast up down restart clean logs seed migrate build-prod deploy prune
+.PHONY: dev dev-fast up down restart clean logs seed migrate build-prod deploy prune test test-api test-verbose test-coverage
 
 # Avvio rapido senza rebuild (usa cache)
 dev-fast:
@@ -73,3 +73,24 @@ shell-frontend:
 
 shell-db:
 	docker compose exec db psql -U user -d conferenzetech
+
+# Testing
+test:
+	cd backend && go test -v ./...
+
+test-verbose:
+	cd backend && go test -v -race -count=1 ./...
+
+test-coverage:
+	cd backend && go test -v -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
+
+test-api:
+	./backend/curl/api-examples.sh
+
+test-http:
+	@echo "Apri backend/api-tests.http in VS Code con REST Client extension"
+	@echo "Oppure usa IntelliJ IDEA HTTP Client"
+
+# Run unit tests nel container
+test-docker:
+	docker compose exec backend go test -v ./...
