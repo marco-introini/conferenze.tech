@@ -62,7 +62,6 @@ Il codice è stato organizzato in moduli separati per migliorare la manutenibili
 ## Dipendenze
 
 - `github.com/google/uuid` - Gestione UUID
-- `github.com/jackc/pgx/v5` - Driver PostgreSQL
 - `github.com/lib/pq` - Driver PostgreSQL aggiuntivo
 - Database queries generate con `sqlc` in `./db`
 

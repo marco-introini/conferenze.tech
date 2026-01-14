@@ -24,15 +24,9 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userIDStr := r.URL.Query().Get("userId")
-	if userIDStr == "" {
-		http.Error(w, "User ID required", http.StatusBadRequest)
-		return
-	}
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil || userID == uuid.Nil {
-		http.Error(w, "Valid user ID required", http.StatusBadRequest)
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusNotFound)
 		return
 	}
 
@@ -85,15 +79,9 @@ func (s *Server) GetUserRegistrations(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
-	userIDStr := r.URL.Query().Get("userId")
-	if userIDStr == "" {
-		http.Error(w, "User ID required", http.StatusBadRequest)
-		return
-	}
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusNotFound)
 		return
 	}
 
