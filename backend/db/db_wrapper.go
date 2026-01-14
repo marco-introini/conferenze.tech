@@ -20,7 +20,12 @@ func (db *DB) WithTransaction(ctx context.Context, fn func(Querier) error) error
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			// Log rollback errors, but don't fail the function
+			// ErrTxDone is expected when transaction was already committed
+		}
+	}()
 
 	if err := fn(db.WithTx(tx)); err != nil {
 		return err

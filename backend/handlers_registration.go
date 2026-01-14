@@ -74,7 +74,9 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(registration)
+	if err := json.NewEncoder(w).Encode(registration); err != nil {
+		log.Printf("Failed to encode registration response: %v", err)
+	}
 }
 
 // GetUserRegistrations retrieves all registrations for a specific user
@@ -118,5 +120,7 @@ func (s *Server) GetUserRegistrations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode registrations response: %v", err)
+	}
 }

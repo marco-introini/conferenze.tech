@@ -25,10 +25,6 @@ func nullBool(b bool) sql.NullBool {
 	return sql.NullBool{Bool: b, Valid: true}
 }
 
-func nullTime(t time.Time) sql.NullTime {
-	return sql.NullTime{Time: t, Valid: true}
-}
-
 // Seed popola il database con dati di esempio utilizzando gofakeit
 func Seed(ctx context.Context, database interface {
 	WithTransaction(context.Context, func(Querier) error) error

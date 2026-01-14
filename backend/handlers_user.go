@@ -77,7 +77,9 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	user.Password = ""
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(RegisterResponse{User: user, Token: token})
+	if err := json.NewEncoder(w).Encode(RegisterResponse{User: user, Token: token}); err != nil {
+		log.Printf("Failed to encode register response: %v", err)
+	}
 }
 
 // Login handles user authentication
@@ -132,7 +134,9 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 
 	user.Password = ""
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(LoginResponse{User: user, Token: token})
+	if err := json.NewEncoder(w).Encode(LoginResponse{User: user, Token: token}); err != nil {
+		log.Printf("Failed to encode login response: %v", err)
+	}
 }
 
 // GetMe retrieves user information by user ID from query parameter
@@ -161,7 +165,9 @@ func (s *Server) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	user.Password = ""
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Printf("Failed to encode user response: %v", err)
+	}
 }
 
 // GetMeFromToken retrieves user information from the authentication token
@@ -184,5 +190,7 @@ func (s *Server) GetMeFromToken(w http.ResponseWriter, r *http.Request) {
 
 	user.Password = ""
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		log.Printf("Failed to encode user response: %v", err)
+	}
 }

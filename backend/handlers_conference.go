@@ -40,7 +40,9 @@ func (s *Server) ListConferences(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode conferences response: %v", err)
+	}
 }
 
 // GetConference retrieves a specific conference with its attendees
@@ -103,7 +105,9 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode conference response: %v", err)
+	}
 }
 
 // CreateConference creates a new conference
@@ -144,7 +148,7 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(ConferenceResponse{
+	if err := json.NewEncoder(w).Encode(ConferenceResponse{
 		ID:        conference.ID.String(),
 		Title:     conference.Title,
 		Date:      conference.Date.Format(time.RFC3339),
@@ -152,5 +156,7 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 		Website:   stringPtr(conference.Website),
 		Latitude:  float64Ptr(conference.Latitude),
 		Longitude: float64Ptr(conference.Longitude),
-	})
+	}); err != nil {
+		log.Printf("Failed to encode create conference response: %v", err)
+	}
 }

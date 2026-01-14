@@ -45,7 +45,9 @@ func (s *Server) Run(port string) error {
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		io.WriteString(w, "OK")
+		if _, err := io.WriteString(w, "OK"); err != nil {
+			log.Printf("Failed to write health check response: %v", err)
+		}
 	})
 
 	// Apply middleware chain

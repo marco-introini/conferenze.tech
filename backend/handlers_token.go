@@ -47,7 +47,9 @@ func (s *Server) GetTokens(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Failed to encode tokens response: %v", err)
+	}
 }
 
 // RevokeToken revokes a specific token
@@ -92,5 +94,7 @@ func (s *Server) RevokeToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("Failed to encode revoke token response: %v", err)
+	}
 }
