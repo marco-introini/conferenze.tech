@@ -36,8 +36,8 @@ func (s *Server) Run(port string) error {
 	protected.HandleFunc("GET /api/registrations/{user_id}", s.GetUserRegistrations)
 	protected.HandleFunc("GET /api/users/{user_id}", s.GetMe)
 	protected.HandleFunc("GET /api/me", s.GetMeFromToken)
-	protected.HandleFunc("/api/tokens", s.GetTokens)
-	protected.HandleFunc("/api/token/revoke", s.RevokeToken)
+	protected.HandleFunc("GET /api/tokens", s.GetTokens)
+	protected.HandleFunc("POST /api/token/revoke", s.RevokeToken)
 
 	// Mount protected routes with authentication middleware
 	mux.Handle("/api/", s.authMiddleware(protected))
