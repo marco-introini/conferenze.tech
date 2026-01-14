@@ -118,6 +118,12 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusNotFound)
+		return
+	}
+
 	var req CreateConferenceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -142,6 +148,7 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 		Website:   nullString(req.Website),
 		Latitude:  nullFloat64(req.Latitude),
 		Longitude: nullFloat64(req.Longitude),
+		CreatedBy: userID,
 	})
 	if err != nil {
 		log.Printf("Error creating conference: %v", err)
@@ -159,6 +166,7 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 		Website:   stringPtr(conference.Website),
 		Latitude:  float64Ptr(conference.Latitude),
 		Longitude: float64Ptr(conference.Longitude),
+		CreatedBy: userID,
 	}); err != nil {
 		log.Printf("Failed to encode create conference response: %v", err)
 	}
