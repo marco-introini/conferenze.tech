@@ -4,13 +4,12 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"log"
 	"net/http"
 	"strings"
-
-	"github.com/jackc/pgx/v5"
 )
 
 // generateToken creates a new random token
@@ -49,7 +48,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 
 		token, err := s.db.GetTokenByHash(r.Context(), tokenHash)
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
+			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "Invalid token", http.StatusUnauthorized)
 				return
 			}

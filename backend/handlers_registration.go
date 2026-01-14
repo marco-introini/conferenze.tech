@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"log"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/marco-introini/conferenze.tech/backend/db"
 )
 
@@ -45,7 +45,7 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 
 	_, err = s.db.GetConferenceByID(ctx, conferenceID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Conference not found", http.StatusNotFound)
 			return
 		}

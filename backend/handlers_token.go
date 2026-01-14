@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 )
 
 // GetTokens retrieves all tokens for a specific user
@@ -76,7 +76,7 @@ func (s *Server) RevokeToken(w http.ResponseWriter, r *http.Request) {
 
 	token, err := s.db.RevokeToken(ctx, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Token not found", http.StatusNotFound)
 			return
 		}

@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/marco-introini/conferenze.tech/backend/db"
 )
 
@@ -98,7 +98,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.db.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return
 		}

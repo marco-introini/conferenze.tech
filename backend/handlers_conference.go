@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"log"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/marco-introini/conferenze.tech/backend/db"
 )
 
@@ -64,7 +64,7 @@ func (s *Server) GetConference(w http.ResponseWriter, r *http.Request) {
 
 	conference, err := s.db.GetConferenceByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Conference not found", http.StatusNotFound)
 			return
 		}
@@ -166,7 +166,7 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 		Website:   stringPtr(conference.Website),
 		Latitude:  float64Ptr(conference.Latitude),
 		Longitude: float64Ptr(conference.Longitude),
-		CreatedBy: userID,
+		CreatedBy: userID.String(),
 	}); err != nil {
 		log.Printf("Failed to encode create conference response: %v", err)
 	}
