@@ -43,8 +43,14 @@ Il codice è stato organizzato in moduli separati per migliorare la manutenibili
   - `RevokeToken` - Revoca di un token
 
 #### Middleware
-- **`middleware.go`** - Middleware generici:
-  - `loggingMiddleware` - Logging delle richieste HTTP
+- **`logging.go`** - Middleware di logging:
+  - `loggingMiddleware` - Logging dettagliato delle richieste HTTP
+    - Metodo HTTP e percorso
+    - Status code della risposta
+    - Dimensione della risposta in bytes
+    - Durata della richiesta
+    - Utente autenticato (se presente)
+- **`security.go`** - Middleware di sicurezza:
   - `corsMiddleware` - Gestione CORS
 
 ## Flusso delle Richieste
@@ -74,9 +80,25 @@ DATABASE_URL=postgres://user:pass@host:5432/dbname?sslmode=disable
 PORT=8080
 ```
 
+## Logging
+
+Il middleware di logging cattura e registra informazioni dettagliate per ogni richiesta:
+
+```
+[127.0.0.1:54321] GET /api/conferences | Status: 200 | Size: 1234 bytes | Duration: 45ms | User: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+[127.0.0.1:54322] POST /api/login | Status: 401 | Size: 28 bytes | Duration: 12ms | User: anonymous
+[127.0.0.1:54323] POST /api/conferences/create | Status: 201 | Size: 256 bytes | Duration: 78ms | User: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+- **Request info**: Indirizzo client, metodo HTTP, percorso
+- **Response info**: Status code HTTP, dimensione risposta
+- **Performance**: Durata dell'elaborazione della richiesta
+- **Security**: ID utente autenticato o "anonymous" per richieste pubbliche
+
 ## Note
 
 - Tutti gli handler utilizzano un timeout di 5 secondi per le operazioni sul database
 - Le password sono hashate usando bcrypt
 - I token sono memorizzati come hash SHA-256 nel database
 - Le risposte sono sempre in formato JSON
+- Il logging cattura automaticamente tutte le richieste con dettagli completi
