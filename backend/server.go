@@ -26,21 +26,17 @@ func (s *Server) Run(port string) error {
 	// Public routes (no authentication required)
 	mux.HandleFunc("POST /api/register", s.Register)
 	mux.HandleFunc("POST /api/login", s.Login)
+	mux.HandleFunc("GET /api/conferences", s.ListConferences)
+	mux.HandleFunc("GET /api/conferences/{conference_id}", s.GetConference)
 
 	// Protected routes (authentication required)
-	protected := http.NewServeMux()
-	protected.HandleFunc("GET /api/conferences", s.ListConferences)
-	protected.HandleFunc("GET /api/conferences/{conference_id}", s.GetConference)
-	protected.HandleFunc("POST /api/conferences/create", s.CreateConference)
-	protected.HandleFunc("POST /api/conferences/{conference_id}/register", s.RegisterToConference)
-	protected.HandleFunc("GET /api/registrations/{user_id}", s.GetUserRegistrations)
-	protected.HandleFunc("GET /api/users/{user_id}", s.GetMe)
-	protected.HandleFunc("GET /api/me", s.GetMeFromToken)
-	protected.HandleFunc("GET /api/tokens", s.GetTokens)
-	protected.HandleFunc("POST /api/token/revoke", s.RevokeToken)
-
-	// Mount protected routes with authentication middleware
-	mux.Handle("/api/", s.authMiddleware(protected))
+	s.protectedRoute(mux, "POST /api/conferences", s.CreateConference)
+	s.protectedRoute(mux, "POST /api/conferences/{conference_id}/register", s.RegisterToConference)
+	s.protectedRoute(mux, "GET /api/registrations/{user_id}", s.GetUserRegistrations)
+	s.protectedRoute(mux, "GET /api/users/{user_id}", s.GetMe)
+	s.protectedRoute(mux, "GET /api/me", s.GetMeFromToken)
+	s.protectedRoute(mux, "GET /api/tokens", s.GetTokens)
+	s.protectedRoute(mux, "POST /api/token/revoke", s.RevokeToken)
 
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -56,4 +52,9 @@ func (s *Server) Run(port string) error {
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("Server starting on %s", addr)
 	return http.ListenAndServe(addr, handler)
+}
+
+// protectedRoute registers a route that requires authentication
+func (s *Server) protectedRoute(mux *http.ServeMux, pattern string, handler http.HandlerFunc) {
+	mux.Handle(pattern, s.authMiddleware(handler))
 }

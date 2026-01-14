@@ -1,13 +1,65 @@
 # Backend per conferenze.tech
 
-Esempio di utilizzo:
+## 🧪 Testing API
+
+Il progetto supporta **4 approcci** per testare le API:
+
+### 1. Test Automatici (Raccomandato)
+```bash
+make test              # Unit tests con httptest
+make test-verbose      # Con race detector
+make test-coverage     # HTML coverage report
+```
+
+### 2. File .http (VS Code REST Client)
+```bash
+# Apri backend/api-tests.http in VS Code
+# Clicca "Send Request" su ogni chiamata
+```
+
+### 3. Script curl
+```bash
+./backend/curl/api-examples.sh  # Script completo interattivo
+```
+
+### 4. curl Manuale
+```bash
 # Login
 curl -X POST http://localhost:8080/api/login \
   -H "Content-Type: application/json" \
   -d '{"email":"marco@marcointroini.it","password":"password"}'
-# Il response contiene un token. Usarlo per chiamate protette:
+
+# Usa il token per chiamate protette
 curl http://localhost:8080/api/me \
   -H "Authorization: Bearer <token>"
+```
+
+📖 **Guide complete**: 
+- [TESTING.md](./TESTING.md) - Testing guide
+- [API.md](./API.md) - API documentation
+
+## 📚 Documentazione API
+
+Vedi [API.md](./API.md) per:
+- Lista completa endpoint
+- Endpoint pubblici vs protetti
+- Modelli dati
+- Esempi di utilizzo
+- Codici di errore
+
+### Quick Reference
+
+**Endpoint Pubblici (No Auth):**
+- ✅ `GET /api/conferences` - Lista conferenze
+- ✅ `GET /api/conferences/{id}` - Dettaglio conferenza
+- ✅ `POST /api/register` - Registrazione
+- ✅ `POST /api/login` - Login
+
+**Endpoint Protetti (Auth Required):**
+- 🔒 `POST /api/conferences/create` - Crea conferenza
+- 🔒 `POST /api/conferences/{id}/register` - Iscriviti
+- 🔒 `GET /api/me` - Info utente
+- 🔒 `GET /api/registrations/{user_id}` - Le mie iscrizioni
 
 ## Struttura
 
