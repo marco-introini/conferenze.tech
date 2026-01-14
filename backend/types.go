@@ -77,6 +77,7 @@ type ConferenceResponse struct {
 	Website   *string  `json:"website,omitempty"`   // Optional conference website URL
 	Latitude  *float64 `json:"latitude,omitempty"`  // Optional GPS latitude coordinate
 	Longitude *float64 `json:"longitude,omitempty"` // Optional GPS longitude coordinate
+	CreatedBy string   `json:"created_by"`          // User UUID who created the conference
 }
 
 // ConferenceWithAttendees represents a conference with its full list of registered participants.

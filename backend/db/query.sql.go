@@ -50,7 +50,7 @@ type CreateConferenceParams struct {
 	Website   sql.NullString
 	Latitude  sql.NullFloat64
 	Longitude sql.NullFloat64
-	CreatedBy uuid.NullUUID
+	CreatedBy uuid.UUID
 }
 
 func (q *Queries) CreateConference(ctx context.Context, arg CreateConferenceParams) (Conference, error) {

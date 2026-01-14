@@ -24,7 +24,7 @@ CREATE TABLE conferences (
     website TEXT,
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
-    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
