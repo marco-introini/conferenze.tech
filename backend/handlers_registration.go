@@ -143,6 +143,31 @@ func (s *Server) UnregisterFromConference(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Check if registration exists
+	_, err = s.db.GetRegistration(ctx, db.GetRegistrationParams{
+		UserID:       userID,
+		ConferenceID: conferenceID,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Registration not found", http.StatusNotFound)
+			return
+		}
+		log.Printf("Error checking registration: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Delete registration
+	err = s.db.DeleteRegistration(ctx, db.DeleteRegistrationParams{
+		UserID:       userID,
+		ConferenceID: conferenceID,
+	})
+	if err != nil {
+		log.Printf("Error deleting registration: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }

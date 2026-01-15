@@ -147,7 +147,7 @@ Authorization: Bearer {{auth_token}}
 
 > {%
     client.test("Deleted successfully", function() {
-        client.assert(response.status === 201, "Response status is not 201");
+        client.assert(response.status === 204, "Response status is not 204");
     });
 %}
 
