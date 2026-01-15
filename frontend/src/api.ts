@@ -8,6 +8,7 @@ export interface User {
   city?: string;
   avatarUrl?: string;
   bio?: string;
+  createdAt?: string;
 }
 
 export interface Conference {
@@ -44,6 +45,12 @@ export interface Registration {
   registeredAt: string;
 }
 
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -55,14 +62,18 @@ async function request<T>(
     ...options.headers,
   };
 
+  if (authToken) {
+    (headers as Record<string, string>)["Authorization"] = `Bearer ${authToken}`;
+  }
+
   const response = await fetch(url, {
     ...options,
     headers,
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Credenziali errate" }));
-    throw new Error(error.error || "Credenziali errate");
+    const error = await response.json().catch(() => ({ error: "Errore" }));
+    throw new Error(error.error || "Errore");
   }
 
   if (response.status === 204) {
@@ -97,7 +108,7 @@ export const api = {
     request<Conference[]>("/api/conferences", { method: "GET" }),
 
   getConference: (id: string) =>
-    request<Conference>("/api/conference?id=" + id, { method: "GET" }),
+    request<Conference>(`/api/conferences/${id}`, { method: "GET" }),
 
   createConference: (data: {
     title: string;
@@ -107,31 +118,28 @@ export const api = {
     latitude?: number;
     longitude?: number;
   }) =>
-    request<Conference>("/api/conferences/create", {
+    request<Conference>("/api/conferences", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   registerToConference: (
-    userId: string,
+    conferenceId: string,
     data: {
-      conferenceId: string;
       role: string;
       notes?: string;
       needsRide: boolean;
       hasCar: boolean;
     }
   ) =>
-    request<{ id: string }>("/api/register-to-conference?userId=" + userId, {
+    request<Registration>(`/api/conferences/${conferenceId}/register`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  getMyRegistrations: (userId: string) =>
-    request<Registration[]>("/api/my-registrations?userId=" + userId, {
-      method: "GET",
-    }),
+  getMyRegistrations: () =>
+    request<Registration[]>("/api/users/registrations", { method: "GET" }),
 
-  getMe: (userId: string) =>
-    request<User>("/api/me?userId=" + userId, { method: "GET" }),
+  getMe: () =>
+    request<User>("/api/me", { method: "GET" }),
 };
