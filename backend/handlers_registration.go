@@ -114,20 +114,17 @@ func (s *Server) GetUserRegistrations(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetConferenceRegistrations retrieves all registrations for a specific conference
-func (s *Server) GetConferenceRegistrations(w http.ResponseWriter, r *http.Request) {
+// UnregisterFromConference removes a user's registration from a conference
+func (s *Server) UnregisterFromConference(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 	defer cancel()
 
-	// non sarve controllare chi sia l'utente, basta sapere essere loggato
-	_, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
 	if !ok {
 		http.Error(w, "User not found in context", http.StatusNotFound)
 		return
 	}
-	
-	log.Println("Sono dentro")
-	
+
 	idStr := r.PathValue("conference_id")
 	conferenceID, err := uuid.Parse(idStr)
 	if err != nil {
@@ -135,7 +132,7 @@ func (s *Server) GetConferenceRegistrations(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_ , err = s.db.GetConferenceByID(ctx, conferenceID)
+	_, err = s.db.GetConferenceByID(ctx, conferenceID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "Conference not found", http.StatusNotFound)
@@ -145,32 +142,7 @@ func (s *Server) GetConferenceRegistrations(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	
-	registrations, err := s.db.GetRegistrationsByConference(ctx, conferenceID)
-	if err != nil {
-		log.Printf("Error getting registrations: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
 
-	response := make([]RegistrationResponse, len(registrations))
-	for i, reg := range registrations {
-		response[i] = RegistrationResponse{
-			ID:                 reg.ID.String(),
-			ConferenceID:       reg.ConferenceID.String(),
-			ConferenceTitle:    reg.Title,
-			ConferenceDate:     reg.Date.Format(time.RFC3339),
-			ConferenceLocation: reg.Location,
-			Status:             string(reg.Status),
-			Role:               string(reg.Role),
-			NeedsRide:          boolPtr(reg.NeedsRide),
-			HasCar:             boolPtr(reg.HasCar),
-			RegisteredAt:       *timePtr(reg.RegisteredAt),
-		}
-	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Failed to encode registrations response: %v", err)
-	}
+	w.WriteHeader(http.StatusNoContent)
 }

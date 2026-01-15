@@ -1,11 +1,4 @@
-### Conferenze.tech API Tests (JetBrains Format)
-### Seleziona l'ambiente "dev" dal menu a tendina "Run with" in alto
-
-################################################################################
-# AUTH - Authentication & Registration
-################################################################################
-
-### 1. Register new user
+### Register new user
 POST {{baseUrl}}/api/register
 Content-Type: application/json
 
@@ -21,7 +14,7 @@ Content-Type: application/json
     });
 %}
 
-### 2. Login (Token salvato automaticamente)
+### Login
 POST {{baseUrl}}/api/login
 Content-Type: application/json
 
@@ -41,7 +34,7 @@ Content-Type: application/json
     client.log("Token saved: " + response.body.token.substring(0, 20) + "...");
 %}
 
-### 3. Get current user info (richiede auth)
+### Get current user info (richiede auth)
 GET {{baseUrl}}/api/me
 Authorization: Bearer {{auth_token}}
 
@@ -51,22 +44,18 @@ Authorization: Bearer {{auth_token}}
     });
 %}
 
-################################################################################
-# CONFERENCES - Gestione Conferenze
-################################################################################
-
-### 4. Lista tutte le conferenze (pubblico)
+### Lista tutte le conferenze (pubblico)
 GET {{baseUrl}}/api/conferences
 Accept: application/json
 
-### 5. Cerca conferenze per nome
+### Cerca conferenze per nome
 GET {{baseUrl}}/api/conferences?search=golang
 Accept: application/json
 
-### 6. Filtra per location
+### Filtra per location
 GET {{baseUrl}}/api/conferences?location=Milano
 
-### 7. Crea nuova conferenza (richiede auth)
+### Crea nuova conferenza (richiede auth)
 POST {{baseUrl}}/api/conferences
 Authorization: Bearer {{auth_token}}
 Content-Type: application/json
@@ -90,7 +79,7 @@ Content-Type: application/json
     client.log("Conference ID saved: " + response.body.id);
 %}
 
-### 8. Dettaglio conferenza
+### Dettaglio conferenza
 GET {{baseUrl}}/api/conferences/{{conf_id}}
 
 > {%
@@ -100,7 +89,7 @@ GET {{baseUrl}}/api/conferences/{{conf_id}}
     });
 %}
 
-### 10. Elimina conferenza (richiede auth + ownership)
+### Elimina conferenza (richiede auth + ownership)
 DELETE {{baseUrl}}/api/conferences/{{conf_id}}
 Authorization: Bearer {{auth_token}}
 
@@ -109,10 +98,6 @@ Authorization: Bearer {{auth_token}}
         client.assert(response.status === 204 || response.status === 200, "Response status is not 204 or 200");
     });
 %}
-
-################################################################################
-# REGISTRATIONS - Iscrizioni alle Conferenze
-################################################################################
 
 ### Pre-requisito: Crea un'altra conferenza per testare le iscrizioni
 POST {{baseUrl}}/api/conferences
@@ -129,7 +114,7 @@ Content-Type: application/json
     client.global.set("reg_conf_id", response.body.id);
 %}
 
-### 11. Registrati a una conferenza
+### Registrati a una conferenza
 POST {{baseUrl}}/api/conferences/{{reg_conf_id}}/register
 Authorization: Bearer {{auth_token}}
 Content-Type: application/json
@@ -146,40 +131,28 @@ Content-Type: application/json
     });
 %}
 
-### 9. Le mie registrazioni
+### Le mie registrazioni
 GET {{baseUrl}}/api/users/registrations
 Authorization: Bearer {{auth_token}}
 
-### 12. Lista partecipanti
-GET {{baseUrl}}/api/conferences/{{reg_conf_id}}/registrations
-Authorization: Bearer {{auth_token}}
+> {%
+    client.test("Listed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 202");
+    });
+%}
 
-### 13. Le mie iscrizioni
-# Prima dobbiamo prendere l'ID utente
-GET {{baseUrl}}/api/me
+### Cancella iscrizione
+DELETE {{baseUrl}}/api/users/registrations/{{reg_conf_id}}
 Authorization: Bearer {{auth_token}}
 
 > {%
-    client.global.set("user_id", response.body.ID);
+    client.test("Deleted successfully", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+    });
 %}
 
-### Ora prendiamo le iscrizioni
-GET {{baseUrl}}/api/registrations/{{user_id}}
-Authorization: Bearer {{auth_token}}
 
-### 14. Cancella iscrizione
-DELETE {{baseUrl}}/api/conferences/{{reg_conf_id}}/register
-Authorization: Bearer {{auth_token}}
-
-################################################################################
-# ADMIN & INFO
-################################################################################
-
-### 15. Lista tutti gli utenti (admin only)
-GET {{baseUrl}}/api/admin/users
-Authorization: Bearer {{auth_token}}
-
-### 16. Health check
+### Health check
 GET {{baseUrl}}/health
 
 > {%
