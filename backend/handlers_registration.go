@@ -48,6 +48,20 @@ func (s *Server) RegisterToConference(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err = s.db.GetRegistration(ctx, db.GetRegistrationParams{
+		UserID:       userID,
+		ConferenceID: conferenceID,
+	})
+	if err == nil {
+		http.Error(w, "User already registered to this conference", http.StatusConflict)
+		return
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		log.Printf("Error checking existing registration: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	role := req.Role
 	if !IsValidRole(role) {
 		role = RoleAttendee

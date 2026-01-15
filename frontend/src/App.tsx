@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profilo from "./pages/Profilo";
 import MieConferenze from "./pages/MieConferenze";
+import RegistrazioneConferenza from "./pages/RegistrazioneConferenza";
 import type { Conference } from "./types";
 import { Map, Calendar, Users, Grid, Search } from "lucide-react";
 import { AuthProvider, useAuth } from "./AuthContext";
@@ -261,6 +262,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/profilo" element={<Profilo />} />
           <Route path="/mie-conferenze" element={<MieConferenze />} />
+          <Route path="/conferenze/:conferenceId/registrazione" element={<RegistrazioneConferenza />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

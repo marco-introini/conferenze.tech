@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { api, type User } from "./api";
+import { setAuthToken } from "./api";
 
 interface AuthContextType {
   user: User | null;
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           console.log("AuthContext - normalized user:", parsedUser);
           setToken(storedToken);
+          setAuthToken(storedToken);
           setUser(parsedUser);
 
           const freshUser = await api.getMe(parsedUser.id);
@@ -57,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           setToken(null);
+          setAuthToken(null);
           setUser(null);
         }
       }
@@ -70,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await api.login(email, password);
     setUser(response.user);
     setToken(response.token);
+    setAuthToken(response.token);
     localStorage.setItem("token", response.token);
     localStorage.setItem("user", JSON.stringify(response.user));
   };
@@ -86,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await api.register(data);
     setUser(response.user);
     setToken(response.token);
+    setAuthToken(response.token);
     localStorage.setItem("token", response.token);
     localStorage.setItem("user", JSON.stringify(response.user));
   };
@@ -93,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     setToken(null);
+    setAuthToken(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
   };

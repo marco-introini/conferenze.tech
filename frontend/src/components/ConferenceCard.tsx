@@ -5,6 +5,7 @@ import {
   Car,
   User as UserIcon,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { Conference } from "../types";
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function ConferenceCard({ conf }: Props) {
+  const navigate = useNavigate();
   const attendees = conf.attendees || [];
 
   return (
@@ -57,14 +59,17 @@ export default function ConferenceCard({ conf }: Props) {
         </div>
       </div>
 
-      <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-500">
-          {attendees.length} partecipanti
-        </span>
-        <button className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-          Partecipo
-        </button>
-      </div>
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-500">
+            {attendees.length} partecipanti
+          </span>
+          <button
+            onClick={() => navigate(`/conferenze/${conf.id}/registrazione`)}
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Partecipo
+          </button>
+        </div>
 
       <div className="p-6 pt-4">
         <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">

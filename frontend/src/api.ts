@@ -71,8 +71,11 @@ async function request<T>(
     headers,
   });
 
+  console.log(`[API] ${options.method || 'GET'} ${endpoint}`, { status: response.status, ok: response.ok });
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Errore" }));
+    console.error(`[API] Error response:`, error);
     throw new Error(error.error || "Errore");
   }
 
