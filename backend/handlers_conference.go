@@ -171,3 +171,53 @@ func (s *Server) CreateConference(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to encode create conference response: %v", err)
 	}
 }
+
+// DeleteConference deletes a conference
+func (s *Server) DeleteConference(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
+	defer cancel()
+
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusNotFound)
+		return
+	}
+
+	idStr := r.PathValue("conference_id")
+	if idStr == "" {
+		http.Error(w, "Conference ID required", http.StatusBadRequest)
+		return
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		http.Error(w, "Invalid conference ID", http.StatusBadRequest)
+		return
+	}
+
+	// Check if the user is the one who created the conference
+	conference, err := s.db.GetConferenceByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Conference not found", http.StatusNotFound)
+			return
+		}
+		log.Printf("Error checking conference ownership: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if conference.CreatedBy != userID {
+		http.Error(w, "User not authorized to delete this conference", http.StatusForbidden)
+		return
+	}
+
+	err = s.db.DeleteConference(ctx, id)
+	if err != nil {
+		log.Printf("Error deleting conference: %v", err)
+		http.Error(w, "Failed to delete conference", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
