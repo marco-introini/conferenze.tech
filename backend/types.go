@@ -26,6 +26,16 @@ type RegisterRequest struct {
 	Bio       *string `json:"bio"`       // Optional user biography or description
 }
 
+// UpdateMeRequest represents the payload for updating the authenticated user's profile.
+// All fields are optional.
+type UpdateMeRequest struct {
+	Name      *string `json:"name"`      // Optional new full name
+	Nickname  *string `json:"nickname"`  // Optional new display nickname
+	City      *string `json:"city"`      // Optional new city location
+	AvatarURL *string `json:"avatarUrl"` // Optional new avatar URL
+	Bio       *string `json:"bio"`       // Optional new biography
+}
+
 // CreateConferenceRequest represents the payload for creating a new conference.
 // Title, Date, and Location are required fields.
 type CreateConferenceRequest struct {

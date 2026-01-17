@@ -6,7 +6,7 @@ import { User, MapPin, Edit2, Save, X } from "lucide-react";
 
 export default function Profilo() {
   const navigate = useNavigate();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -51,9 +51,20 @@ export default function Profilo() {
     return null;
   }
 
-  const handleSave = () => {
-    console.log("Salvando dati:", formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      console.log("Salvando dati:", formData);
+      await updateUser({
+        name: formData.name,
+        nickname: formData.nickname,
+        city: formData.city,
+        bio: formData.bio,
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Errore salvataggio profilo:", error);
+      alert("Errore durante il salvataggio del profilo");
+    }
   };
 
   return (

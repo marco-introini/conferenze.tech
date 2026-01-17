@@ -15,6 +15,7 @@ interface AuthContextType {
     avatarUrl?: string;
     bio?: string;
   }) => Promise<void>;
+  updateUser: (data: Partial<User>) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -95,6 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("user", JSON.stringify(response.user));
   };
 
+  const updateUser = async (data: Partial<User>) => {
+    const updatedUser = await api.updateUser(data);
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -110,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         login,
         register,
+        updateUser,
         logout,
         isAuthenticated: !!token,
         isLoading,

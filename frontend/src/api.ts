@@ -145,4 +145,10 @@ export const api = {
 
   getMe: () =>
     request<User>("/api/me", { method: "GET" }),
+
+  updateUser: (data: Partial<User>) =>
+    request<User>("/api/me", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 };

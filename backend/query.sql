@@ -20,13 +20,13 @@ SELECT id, email, password, name, nickname, city, avatar_url, bio, created_at, u
 
 -- name: UpdateUser :one
 UPDATE users SET
-    name = COALESCE($2, name),
-    nickname = COALESCE($3, nickname),
-    city = COALESCE($4, city),
-    avatar_url = COALESCE($5, avatar_url),
-    bio = COALESCE($6, bio),
+    name = COALESCE(sqlc.narg('name'), name),
+    nickname = COALESCE(sqlc.narg('nickname'), nickname),
+    city = COALESCE(sqlc.narg('city'), city),
+    avatar_url = COALESCE(sqlc.narg('avatar_url'), avatar_url),
+    bio = COALESCE(sqlc.narg('bio'), bio),
     updated_at = NOW()
-WHERE id = $1
+WHERE id = sqlc.arg('id')
 RETURNING id, email, password, name, nickname, city, avatar_url, bio, created_at, updated_at;
 
 -- name: UpdateUserPassword :one

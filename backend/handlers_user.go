@@ -189,3 +189,40 @@ func (s *Server) GetMeFromToken(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to encode user response: %v", err)
 	}
 }
+
+// UpdateMe updates the authenticated user's information
+func (s *Server) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
+	defer cancel()
+
+	userID, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+	if !ok {
+		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		return
+	}
+
+	var req UpdateMeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	updatedUser, err := s.db.UpdateUser(ctx, db.UpdateUserParams{
+		ID:        userID,
+		Name:      nullString(req.Name),
+		Nickname:  nullString(req.Nickname),
+		City:      nullString(req.City),
+		AvatarUrl: nullString(req.AvatarURL),
+		Bio:       nullString(req.Bio),
+	})
+	if err != nil {
+		log.Printf("Error updating user: %v", err)
+		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(toUserResponse(updatedUser)); err != nil {
+		log.Printf("Failed to encode user response: %v", err)
+	}
+}

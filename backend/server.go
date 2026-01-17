@@ -37,6 +37,7 @@ func (s *Server) Run(port string) error {
 	s.protectedRoute(mux, "DELETE /api/users/registrations/{conference_id}", s.UnregisterFromConference)
 	s.protectedRoute(mux, "GET /api/users/{user_id}", s.GetMe)
 	s.protectedRoute(mux, "GET /api/me", s.GetMeFromToken)
+	s.protectedRoute(mux, "PUT /api/me", s.UpdateMe)
 	s.protectedRoute(mux, "GET /api/tokens", s.GetTokens)
 	s.protectedRoute(mux, "POST /api/tokens/revoke", s.RevokeToken)
 

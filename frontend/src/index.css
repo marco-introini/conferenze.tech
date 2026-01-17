@@ -13,6 +13,11 @@ body {
     font-family: theme("fontFamily.sans");
 }
 
+/* Stile per i bottoni */
+button {
+    cursor: pointer;
+}
+
 /* Assicurati che l'app occupi tutta l'altezza */
 #root {
     min-height: 100vh;

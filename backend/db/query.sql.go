@@ -896,33 +896,33 @@ func (q *Queries) UpdateRegistrationStatus(ctx context.Context, arg UpdateRegist
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users SET
-    name = COALESCE($2, name),
-    nickname = COALESCE($3, nickname),
-    city = COALESCE($4, city),
-    avatar_url = COALESCE($5, avatar_url),
-    bio = COALESCE($6, bio),
+    name = COALESCE($1, name),
+    nickname = COALESCE($2, nickname),
+    city = COALESCE($3, city),
+    avatar_url = COALESCE($4, avatar_url),
+    bio = COALESCE($5, bio),
     updated_at = NOW()
-WHERE id = $1
+WHERE id = $6
 RETURNING id, email, password, name, nickname, city, avatar_url, bio, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	ID        uuid.UUID
-	Name      string
+	Name      sql.NullString
 	Nickname  sql.NullString
 	City      sql.NullString
 	AvatarUrl sql.NullString
 	Bio       sql.NullString
+	ID        uuid.UUID
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, updateUser,
-		arg.ID,
 		arg.Name,
 		arg.Nickname,
 		arg.City,
 		arg.AvatarUrl,
 		arg.Bio,
+		arg.ID,
 	)
 	var i User
 	err := row.Scan(
